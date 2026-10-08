@@ -94,6 +94,11 @@ def _with_answer(text, answer, asked):
     """
     text = text.rstrip(" .!?")
     answer = answer.strip(" .!?")
+    if asked == "name":
+        return _with_name(text, answer)
+    if asked in ("place", "new_place"):
+        # "Park Leumi, Ramat Gan" is one place: its commas must not cut it.
+        answer = re.sub(r"\s*[,;.!?]+\s*", " ", answer).strip()
     if asked == "place" and not re.match(rf"(?:at|in)\b|{_NOWHERE}", answer, re.I):
         answer = f"at {answer}"
     elif asked == "new_place":
@@ -103,6 +108,28 @@ def _with_answer(text, answer, asked):
     elif asked == "time" and re.match(r"\d|half|quarter", answer, re.I):
         answer = f"at {answer}"
     return f"{text} {answer}"
+
+
+_PRONOUN = r"^\W*(?:(?:yes|ok|okay|so|and|well)\W+)?(?:she|he|they)(?:'s| is| are)?\b"
+
+
+def _with_name(text, answer):
+    """The answer to "What is the name of the person?", put back into what was said.
+
+    "She is my aunt" + "Rebecca" -> "Rebecca is my aunt". An answer that is a whole
+    sentence ("Rebecca is my aunt") replaces what was said.
+    """
+    if re.search(r"(?i)\b(?:is|my|called|named)\b", answer):
+        return answer
+    name = answer.split()[-1] if answer.split() else answer
+    name = name[:1].upper() + name[1:]
+    if re.match(_PRONOUN, text, re.I):
+        return re.sub(_PRONOUN, f"{name} is", text, count=1, flags=re.I)
+    return f"{text}. The name is {name}"
+
+
+# What people say while they think. It is not an answer.
+_NOT_AN_ANSWER = re.compile(r"^\W*(?:u+m+|u+h+|e+r+m*|h+m+|m+h*m+|well|so|hello|hi|hey|wait|sorry)?\W*$", re.I)
 
 
 # ---- Change or cancel an event ----
@@ -189,7 +216,7 @@ MAYBE = 0.6    # this close: ask "Do you mean ...?"
 # A capitalized word that opens a sentence is taken as a name only before one of these.
 _AFTER_NAME = r"(?:'s|\s+(?:is|and|told|said|says|has|will|comes?|coming)\b)"
 # A capitalized word after one of these is a place, not a person: "go to Rome", "in Paris".
-_BEFORE_A_PLACE = r"\b(?:to|in|at)\s+(?:the\s+)?$"
+_BEFORE_A_PLACE = r"\b(?:to|in|at|near|from)\s+(?:the\s+)?(?:[A-Z][a-zà-ÿ]+\s+)?$"
 
 
 def _sound(name):
@@ -279,7 +306,7 @@ def _add_person(text, now, people):
         return update
     name = _new_name(text, people)
     if not name:
-        return {"person": None, "ask": "What is the name of the person?"}
+        return {"person": None, "ask": "What is the name of the person?", "asked": "name"}
 
     known = _match_person(name, people)
     if known and known["name"].lower() == name.lower():
@@ -358,9 +385,9 @@ def _add_connection(text, now, people):
 
 _MEMO_LEAD = re.compile(
     r"^\W*(?:(?:yes|ok|okay|so|well)\W+)?(?:please\s+)?(?:can you\s+|could you\s+)?"
-    r"(?:(?:i (?:want|would like|'d like) to )?(?:remember|add (?:an? |some )?(?:memo|note|information|info))"
+    r"(?:(?:i (?:want|would like|'d like) to )?(?:remember|ad+s? (?:and )?(?:an? |some |another |other )*(?:memo|note|information|info))"
     r"|note(?: down)?(?: for later)?|write (?:this |it )?down|make a note"
-    r"|keep in mind|don'?t forget|keep a (?:memo|note)|save this|m[ie]m+o|information|info)\b"
+    r"|keep in mind|don'?t forget|keep a (?:memo|note)|save this|(?:an? )?m[ie]m+o|information|info)\b"
     r"(?:\s+(?:about|on|for)\s+(?P<about>[^:,.]+?)\s*(?:[:,.]|$))?\s*(?:\bthat\b|[:,.])?\s*",
     re.I,
 )
@@ -495,22 +522,39 @@ HANDLERS = {
 _NAMES_AS_SAID = {"add_person", "search", "ask_time", "help", None}
 
 
-def assist(text, now, people=(), intent=None, exact_names=False, asked=None, answer=None):
+_GREETING = re.compile(
+    r"^\W*(?:hi|hello|hey|bonjour|shalom|good (?:morning|afternoon|evening))\b(?:\W+\w+){0,2}\W*$"
+    r"|\bmy name is\b|\bi am called\b", re.I)
+
+
+def assist(text, now, people=(), intent=None, exact_names=False, asked=None, answer=None, recent=None):
     """Understand one sentence said to the assistant.
 
     When the assistant asked for a missing detail ("At what time?"), `text` is what was
     said before, `answer` is the reply, `asked` is the detail asked for, and `intent`
     is the intent already found.
     `exact_names` is set after the user answered "no" to "Do you mean ...?".
+    `recent` is the name of the person the user and the app just talked about: "She is
+    my aunt", said right after adding Rebecca, is about Rebecca.
     Returns {"intent", "score", "text", ...details}; intent is None when nothing was
     understood, and "text" is the whole request so far.
     """
     people = list(people)
     score = None
+    if answer and _NOT_AN_ANSWER.match(answer):
+        answer = None   # "Um...": the same question is asked again
     if answer:
         text = _with_answer(text, answer, asked)
     if intent is None:
+        if _GREETING.search(text):
+            return {"intent": "greet", "score": 1.0, "text": text}
+        if recent and not people_in(text, people) and re.match(_PRONOUN, text, re.I):
+            verb = " is" if re.match(r"^\W*(?:\w+\W+)?(?:she|he|they)(?:'s| is| are)\b", text, re.I) else ""
+            text = re.sub(_PRONOUN, f"{recent}{verb}", text, count=1, flags=re.I)
         intent, score = classifier.classify(text, [p["name"] for p in people])
+    # A place is not a person: nothing is asked about the names in the answer to "Where is it?".
+    if answer and asked in ("place", "new_place"):
+        exact_names = True
 
     # "Information about Nadia" is a question about a person, not a search of the notes.
     if intent == "search" and (people_meant(text, people) or (not exact_names and check_names(text, people)[1])):

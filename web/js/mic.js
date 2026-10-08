@@ -13,7 +13,7 @@ const Mic = (() => {
   const SAMPLE_RATE = 16000;
   const MIN_SPEECH_LEVEL = 0.004; // quietest level that can count as speech (RMS)
   const SPEECH_OVER_NOISE = 3;    // speech must be this many times louder than the room
-  const END_SILENCE_S = 0.8;      // silence that ends a phrase
+  const END_SILENCE_S = 1.2;      // silence that ends a phrase: long enough to breathe and think
   const PRE_ROLL_S = 0.3;         // audio kept from just before speech starts
   const MAX_PHRASE_S = 20;        // a phrase is cut after this long without a pause
   const MIN_SPEECH_S = 0.25;      // shorter bursts are treated as noise

@@ -113,7 +113,8 @@ const Places = (() => {
       if (spot.km <= MAX_KM && !twice) found.push(spot);
     }
     found.sort((a, b) => b.match - a.match || a.km - b.km);
-    return found.slice(0, MAX_FOUND).map(({ match, km: d, ...spot }) => (near.exact ? { ...spot, km: d } : spot));
+    // `sure`: the name is the one that was said, not only a name that looks like it.
+    return found.slice(0, MAX_FOUND).map(({ match, km: d, ...spot }) => ({ ...spot, sure: match > 0, ...(near.exact ? { km: d } : {}) }));
   };
 
   // "600 metres", "2.5 kilometres"

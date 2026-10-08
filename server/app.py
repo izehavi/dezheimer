@@ -109,6 +109,7 @@ class AssistRequest(BaseModel):
     exact_names: bool = False  # set after the user said "no" to "Do you mean ...?"
     asked: str | None = None   # the detail the assistant asked for: "date", "time", "place", "people"
     answer: str | None = Field(default=None, max_length=2000)  # the user's reply to that question
+    recent: str | None = Field(default=None, max_length=80)    # the person just talked about, for "She is ..."
 
 
 @app.post("/api/assist")
@@ -116,7 +117,8 @@ def assist_request(request: AssistRequest):
     """Understand one sentence said to the assistant: what is asked, and its details."""
     people = [p.model_dump() for p in request.people]
     return assist(
-        request.text, request.now, people, request.intent, request.exact_names, request.asked, request.answer
+        request.text, request.now, people, request.intent, request.exact_names, request.asked, request.answer,
+        request.recent,
     )
 
 

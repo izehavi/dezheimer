@@ -30,6 +30,9 @@ EXAMPLES = {
         "Add a coffee with Sarah to my agenda tomorrow at 3 pm.",
         "Put a dentist appointment in my calendar on Friday at 10.",
         "I plan to go to the market tomorrow morning.",
+        "Wanna go climbing with Sarah.",
+        "I want to go swimming with Paul on Friday.",
+        "Let's have a coffee with Rose tomorrow.",
         "I'm having lunch with Paul on Sunday at noon.",
         "I'm going to the cinema with Rose on Saturday evening.",
         "I have an appointment with the doctor next Monday at ten thirty.",
@@ -279,7 +282,7 @@ _HINTS = [
     ("add_memo", 0.2, re.compile(r"\b(?:told me|said that|says that|tells me)\b", re.I)),
     # "Memo about Paul", also when the speech model writes "Mimo"; "add an information about Paul".
     ("add_memo", 0.45, re.compile(
-        r"^\W*m[ie]m+o\b|\badd (?:an? |some )?(?:information|info|memo|note)\b", re.I)),
+        r"^\W*(?:an? )?m[ie]m+o\b|\bad+s? (?:and )?(?:an? |some |another |other )*(?:information|info|memo|note)\b", re.I)),
     ("search", 0.3, re.compile(r"^\W*(?:please\s+)?(?:search|find|look (?:for|up))\b", re.I)),
     ("add_event", 0.2, re.compile(r"\b(?:agenda|calendar|appointment|schedule)\b", re.I)),
     ("cancel_event", 0.3, re.compile(
@@ -291,6 +294,10 @@ _HINTS = [
         r"\b(?:new (?:person|friend|neighbou?r|contact)|i (?:just |have just )?met|(?:his|her|their) name is"
         r"|called|named)\b", re.I)),
 ]
+# "Wanna go climbing with Elinor?": a wish, even when the speech model hears a question in the voice.
+_WISH = re.compile(
+    r"^\W*(?:i\s+|we\s+)?(?:wanna|want to|would like to|'d like to|plan to|am going to|'m going to|gonna|let'?s)\s+"
+    r"(?!know\b|see what\b|hear\b)", re.I)
 _POLITE = re.compile(r"^\W*(?:please\s+)?(?:can|could|will|would) you\s+(?:please\s+)?", re.I)
 
 
@@ -299,6 +306,8 @@ def is_question(text):
     if polite:
         # "Can you tell me who Rose is?" is a question; "Can you add a lunch on Friday?" is an order.
         return bool(_ASKING.match(text[polite.end():]))
+    if _WISH.match(text):
+        return False
     return text.rstrip().endswith("?") or bool(_ASKING.match(text))
 
 

@@ -13,13 +13,13 @@ What is solid and what is not:
 | Part | State |
 | --- | --- |
 | Live transcription (Whisper small, with the user's vocabulary) | Whisper tiny worked but misheard many words in practice. Changed on 2026-10-08; not yet confirmed with a real voice. |
-| Voice assistant | Works when the sentences are typed. **Not tested with a real voice yet.** |
+| Voice assistant | Used by voice in two rounds of practice, on the computer and on the iPhone. Each round found things to fix; see "Improvement mode" below. |
 | Spoken reminders | Work in a test, while the app is open. |
 | Connections map | Works, with selection and search. |
 | Automatic memos from a whole conversation (language model) | Weak: finds about half of the news, slow, and too large for a phone. |
 | Accounts and backup | First version works with email and password. Reachable from this computer only until the server is put online. The backup is not encrypted yet. |
 | Place of an event on the map | New on 2026-10-08. Works in a test with a simulated position in Paris. Not tried with a real device position yet. |
-| iPhone | First prototype built on 2026-10-08: the iPhone opens the app from the computer over the home Wi-Fi. Checked from the computer only. **Not tried on the iPhone yet.** |
+| iPhone | First prototype built on 2026-10-08: the iPhone opens the app from the computer over the home Wi-Fi. **Used by the tester on an iPhone 13:** requests by voice and the position worked (the feedback of round 2 partly comes from it). The home-screen icon and the reminders on the iPhone are not confirmed. |
 
 | Phase | Status |
 | --- | --- |
@@ -58,6 +58,27 @@ The project is in a practice phase. The project owner uses the assistant by voic
 | Small wording problems | "your sister Lothan", "At The comer coffee", "At what time?" asked twice | Fixed. |
 
 Not fixed: a short "yes" heard as "you". The app does not accept "you" as a yes, because background noise is also written "you" and nothing must be added without consent. The Yes button remains, and the larger model should hear "yes" better.
+
+### Round 2 — 2026-10-08, partly from the iPhone
+
+16 requests: 4 yes, 6 no, 6 unanswered. The feedback given on the iPhone arrives in the same file as the rest. Nine new tests in [tests/test_feedback.py](tests/test_feedback.py).
+
+| Cause | Examples from the feedback | What was done |
+| --- | --- | --- |
+| "Do you mean ...?" asked again after every answer | "A meeting with Saba": "Do you mean Sarah?" five times | Asked once per request. |
+| A place name taken for a misheard person | "next to Tel Aviv": "Do you mean David?" | The second word of a place name, and anything said in answer to "Where is it?", is not checked against people. |
+| Someone unknown in an event | "A meeting with Saba" | After the event is added, the app says "Saba is not in your people yet. Shall I add Saba?", links Saba to the event, and invites the user to say who Saba is. |
+| "She is my aunt" right after adding someone | The app asked for the name, then wrote "your own Rebecca is my aunt" | "She", "he" and "they" mean the person just talked about, for three minutes. When the name is asked anyway, the answer is no longer glued to the relationship. |
+| A wish heard as a question | "Wanna go climbing with Elinor?" answered who Elinor is | "Wanna", "I want to", "let's" open a request, not a question. The title is now "Climbing with Elinor". |
+| Cut before the end of the sentence | "you do not let me finish" | The silence that ends a phrase is 1.2 seconds instead of 0.8. |
+| The memo kept its opening words | "A memo on Elinor. She's starting her work on Friday." | The opening is removed, also in "Add another information about ...", even heard as "Ads and other information". |
+| A place said with commas was refused | "Park, alumni, Ramat Gan" | The whole answer is the place. |
+| A hesitation taken as the answer | "Um." became the place | The question is asked again. |
+| A wrong place chosen from the map | "Back" proposed a shop called "Black" | A place is only proposed by itself when its name is what was said. Close names are shown, with "None of these" selected. |
+| A greeting added a person | "Hi, my name is Itay" | A greeting gets a greeting. |
+| "Mhm" not taken as yes | "Mhm." | "Mhm", "uh-huh", "yup", "of course" are a yes. |
+
+Not fixed, because the cause is the speech model: "aunt" heard as "own", "Givatayim" as "Give that time", "Leumi" as "alumni", "Ilan" as "Ilana". The model is English-only and these are Hebrew names and an accent it knows less well. This is the case for measuring, then fine-tuning or changing the speech model (next steps).
 
 ## How to run it
 
@@ -106,7 +127,7 @@ Double-click [start.bat](start.bat). The app opens at http://localhost:8765. The
 | [server/commands.py](server/commands.py) | Reads an event from a sentence: day, time, people, place, activity. Also `POST /api/command`, used by the Listen screen. |
 | [server/understanding.py](server/understanding.py) | `POST /api/understand`: summary and memos from a whole conversation with `Qwen/Qwen2.5-3B-Instruct`, checked by code. |
 
-Tests are in [tests/](tests/): 61 tests, run with `python -m unittest discover tests`.
+Tests are in [tests/](tests/): 70 tests, run with `python -m unittest discover tests`.
 
 ### How a voice request works
 
@@ -136,6 +157,7 @@ To make a request more robust, add example sentences to `EXAMPLES` in [server/in
 ## What was tested
 
 - **Speech model, 2026-10-08:** ten sentences read by two synthetic voices, three model sizes, with and without the vocabulary. With the vocabulary, every size wrote "Elinor", "Lothan" and "Carmel Coffee" correctly where it had written "Eleanor", "Lathan" or "caramel coffee" without it. On the clear voice all three sizes were otherwise right. On a French synthetic voice reading English, all three made many mistakes and "small" was only slightly better; this voice is a much harder case than a real speaker, so it does not settle the choice of size. A real comparison needs recordings of the tester.
+- **Feedback round 2, replayed typed** in a headless browser: the unknown person, the name asked once, "he is my grandfather" after adding someone, the close place name not chosen, the greeting and "mhm" all gave what the tester wanted.
 - **iPhone prototype, 2026-10-08,** from the computer only: the secure address is accepted with the computer's certificate and refused without it; without the code, the pages show the code screen and the services answer "not allowed"; a wrong code is refused and the right one opens the app; the app on the computer needs no code. At the size of an iPhone 13, every screen fits the width and a typed request was answered. Not tested, because it needs the iPhone: installing and trusting the certificate, the microphone, the sound of the voice, the position, "Add to Home Screen".
 - **Place on the map, 2026-10-08,** typed, with a simulated position in Paris: a café with three places of the same name gave the nearest first and kept the one tapped, with its address; an invented place and "at home" were kept as said; a new place for an event was found; with the position refused, the app asked for the town, found the place around it, and remembered the town; answering "no" added the event without a map. Not tested: the real position of a real device, and a place name heard by voice.
 - **Feedback round 1, replayed typed:** the requests that had failed now give what the tester wanted (see the table above).
@@ -185,7 +207,7 @@ To make a request more robust, add example sentences to `EXAMPLES` in [server/in
 
 ## Next steps
 
-1. **Second round of practice**, to see whether words are heard better and what still fails.
+1. **Third round of practice**, mostly on the iPhone.
 2. **Decide on fine-tuning the speech model.** The plan: first measure. Keep, with the tester's agreement, the audio of each phrase next to what was really said; about 100 phrases are enough to compare model sizes fairly, and one to two hours are needed to fine-tune. Fine-tuning is most useful to make a phone-sized model (tiny or base) as good on this voice as the larger one.
 3. **Try the prototype on the iPhone** (`start-phone.bat`) and report what does not work: the microphone, the voice and the position can behave differently on an iPhone.
 4. Add the missing voice requests: correct or remove a memo, a permanent fact about a person; choose a place on the map by voice.
@@ -231,4 +253,5 @@ To make a request more robust, add example sentences to `EXAMPLES` in [server/in
 - **2026-10-08** — First round of feedback read and acted on: 11 causes fixed, 18 new tests, larger speech model with the user's vocabulary, hand correction in confirmations, relationship of a known person, change of place.
 - **2026-10-08** — The place of an event is looked for on the map around the user. Guideline: the path to a phone in three steps.
 - **2026-10-08** — iPhone prototype: `start-phone.bat`, secure address with the computer's own certificate, code, home-screen icon, microphone and voice adapted to the iPhone. Project saved on GitHub.
+- **2026-10-08** — Second round of feedback, partly from the iPhone: 12 causes fixed, 9 new tests.
 - **2026-10-07** — Improvement mode: a verdict after each request, saved for improving the app. An event now needs a place and a person, and the app asks for them.

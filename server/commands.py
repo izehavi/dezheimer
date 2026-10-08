@@ -298,7 +298,8 @@ def as_place(words, preposition="At"):
 
 
 def _read_place(sentence):
-    match = sentence.take(rf"\b(at|in)\s+((?!\d)[^{MASK}.,;!?]+?){_END}")
+    # A comma also ends the place: "in the park, next to the school".
+    match = sentence.take(rf"\b(at|in)\s+((?!\d)[^{MASK}.,;!?]+?)(?:{_END}|(?=\s*,))")
     return as_place(match.group(2), match.group(1)) if match else None
 
 
@@ -326,6 +327,10 @@ def _read_activity(sentence, place):
     match = re.search(rf"\bfor\s+(?:(?:a|an|some|the|our)\s+)?([a-z][a-z' -]*?){_END}", sentence.text, re.I)
     if match:
         return match.group(1).strip().capitalize()
+    # "go climbing", "going swimming"
+    match = re.search(r"\bgo(?:ing)?\s+([a-z]+ing)\b", sentence.text, re.I)
+    if match:
+        return match.group(1).capitalize()
     # "at Carmel coffee": the place itself says what it is for.
     return _find_activity(place) if place else None
 

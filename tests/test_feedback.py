@@ -128,5 +128,78 @@ class WhatWentRight(unittest.TestCase):
         self.assertEqual((r["intent"], r["ask"]), ("add_person", "What is the name of the person?"))
 
 
+MORE = PEOPLE + [
+    {"id": "safta", "name": "Safta", "relationship": "Someone you know"},
+    {"id": "rebecca", "name": "Rebecca", "relationship": "Someone you know"},
+]
+
+
+def hear2(text, **more):
+    return assist(text, NOW, MORE, **more)
+
+
+class RoundTwo(unittest.TestCase):
+    """Second round, 2026-10-08, partly from the iPhone."""
+
+    def test_a_wish_heard_as_a_question_is_still_an_event(self):
+        # Wanted: an event. The app answered who Elinor is.
+        r = hear("Wanna go climbing with Elinor?")
+        self.assertEqual((r["intent"], r["event"]["title"], r["asked"]), ("add_event", "Climbing with Elinor", "date"))
+
+    def test_a_memo_does_not_keep_its_opening_words(self):
+        # Wanted: the memo without "A memo on Elinor".
+        r = hear("A memo on Elinor. She's starting her work on Friday.")
+        self.assertEqual((r["intent"], r["memo"]["text"]), ("add_memo", "She's starting her work on Friday."))
+        r = hear2("Ads and other information about Safta, she likes dancing.")
+        self.assertEqual((r["memo"]["personId"], r["memo"]["text"]), ("safta", "She likes dancing."))
+
+    def test_she_is_about_the_person_just_talked_about(self):
+        # "Add a new contact, Rebecca", then "She is my aunt": the app asked for the name.
+        r = hear2("She is my aunt.", recent="Rebecca")
+        self.assertEqual((r["intent"], r["update"]["personId"], r["update"]["relationship"]),
+                         ("update_person", "rebecca", "Your aunt"))
+        r = hear2("He's my grandmother.", recent="Safta")
+        self.assertEqual(r["update"]["relationship"], "Your grandmother")
+
+    def test_the_name_given_as_an_answer_is_not_part_of_the_relationship(self):
+        # The app wrote "your grandmother Safta" and "your own Rebecca is my aunt".
+        r = hear2("He's my grandmother.")
+        self.assertEqual((r["ask"], r["asked"]), ("What is the name of the person?", "name"))
+        r = hear2(r["text"], intent=r["intent"], asked="name", answer="Safta.")
+        self.assertEqual(r["update"]["relationship"], "Your grandmother")
+        r = hear2("She is my own.", intent="add_person", asked="name", answer="Rebecca is my aunt.")
+        self.assertEqual(r["update"]["relationship"], "Your aunt")
+
+    def test_a_place_name_is_not_a_misheard_person(self):
+        # "Tel Aviv" made the app ask "Do you mean David?" five times.
+        r = hear2("Add another meeting with Rebecca in the park, Alleumi next to Tel Aviv.")
+        self.assertNotIn("suggest", r)
+        self.assertEqual((r["event"]["place"], r["asked"]), ("In the park", "date"))
+
+    def test_the_answer_to_where_is_taken_whole_and_not_name_checked(self):
+        r = hear2("Add a meeting with Rebecca tomorrow at 10am.", intent="add_event", asked="place",
+                  answer="Park, alumni, Ramât gan.")
+        self.assertNotIn("suggest", r)
+        self.assertEqual((r["event"]["place"], r["ask"]), ("At Park alumni Ramât gan", None))
+
+    def test_um_is_not_an_answer(self):
+        # "Um." was taken as the place.
+        r = hear2("Add a meeting with Rebecca tomorrow at 10am.", intent="add_event", asked="place", answer="Um.")
+        self.assertEqual((r["event"]["place"], r["ask"]), (None, "Where is it?"))
+
+    def test_someone_unknown_in_an_event_is_kept_for_the_app_to_offer(self):
+        # After "no" to "Do you mean Sarah?", Saba stays in the event, without an id: the app offers to add Saba.
+        r = hear("A meeting with Saba.")
+        self.assertEqual(r["suggest"]["name"], "Sarah")
+        r = hear("A meeting with Saba.", intent="add_event", exact_names=True)
+        self.assertEqual(r["event"]["people"], [{"id": None, "name": "Saba"}])
+
+    def test_a_greeting_adds_nobody(self):
+        # "Hi, my name is Itay" added a person called Itay.
+        for text in ["Bonjour.", "Hi, my name is Itay.", "Hello"]:
+            self.assertEqual(hear(text)["intent"], "greet", text)
+        self.assertEqual(hear("Hello, add a coffee with Sarah tomorrow at 3 pm at home.")["intent"], "add_event")
+
+
 if __name__ == "__main__":
     unittest.main()

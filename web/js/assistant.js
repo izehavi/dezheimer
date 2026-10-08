@@ -16,6 +16,11 @@ const Assistant = (() => {
   // `places` are what the map found for the place of an event; `chosen` is the one kept (-1: none).
   let confirm = null;
   let townAsk = null;            // "In which town are you?" waiting for an answer: { place, next }
+  let namesSettled = false;      // "Do you mean Rose?" was answered: it is not asked again in this request
+  // The person just talked about, so that "She is my aunt" is understood: { name, at }.
+  let recent = null;
+  const RECENT_MS = 3 * 60 * 1000;
+  const about = (name) => { recent = { name: name.replace(/^Dr\. /, ''), at: Date.now() }; };
   let nameCheck = null;          // "Do you mean Rose?" waiting for an answer: { text, intent, heard, name }
   let silenceTimer;
   let ear = 0;                   // changes each time listening starts or is interrupted
@@ -119,12 +124,12 @@ const Assistant = (() => {
 
   // ---- What was said ----
 
-  const YES = /\b(yes|yeah|yep|ok|okay|correct|right|sure|please do|do it|add it|exactly|that'?s it|go ahead)\b/i;
+  const YES = /\b(yes|yeah|yep|yup|ok|okay|correct|right|sure|of course|absolutely|please do|do it|add it|exactly|that'?s it|go ahead|m+-?h+m+|uh-?huh)\b/i;
   const NO = /\b(no|nope|cancel|wrong|don'?t|stop|not)\b/i;
 
   // "yes" or "no"; null when it is neither. "Yes, cancel it" is a yes.
   const yesOrNo = (text) => {
-    if (/^\W*(yes|yeah|yep|ok|okay|sure)\b/i.test(text)) return 'yes';
+    if (/^\W*(yes|yeah|yep|yup|ok|okay|sure|m+-?h+m+|uh-?huh)\b/i.test(text)) return 'yes';
     if (NO.test(text)) return 'no';
     return YES.test(text) ? 'yes' : null;
   };
@@ -140,6 +145,7 @@ const Assistant = (() => {
       if (review && review.state !== 'thanks') sendReview('unanswered');
       review = null;
       trace = { startedAt: new Date().toISOString(), turns: [], calls: [] };
+      namesSettled = false;
     }
     trace.turns.push({ who: 'you', text, source });
 
@@ -172,7 +178,7 @@ const Assistant = (() => {
       let full = pending ? pending.text : text;
       let intent = pending && pending.intent;
       const reply = pending ? { asked: pending.asked || null, answer: text } : {};
-      let exactNames = false;
+      let exactNames = namesSettled;
       if (nameCheck) {
         // The answer to "Do you mean Rose?": the first sentence is read again, with the right name.
         const answer = yesOrNo(text);
@@ -181,6 +187,8 @@ const Assistant = (() => {
         full = answer === 'yes' ? nameCheck.text.replace(nameCheck.heard, nameCheck.name) : nameCheck.text;
         intent = asked;
         exactNames = answer === 'no';
+        // Asked once: the same name is not asked about again at each further question.
+        namesSettled = true;
         nameCheck = null;
         // A question about someone who is not known cannot be answered.
         if (exactNames && ['ask_agenda', 'ask_person', 'change_event', 'cancel_event'].includes(asked)) {
@@ -207,11 +215,12 @@ const Assistant = (() => {
   const ask = async (text, intent, exactNames = false, reply = {}) => {
     const d = new Date();
     const now = `${Dates.key(d)}T${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+    const lately = recent && Date.now() - recent.at < RECENT_MS ? recent.name : null;
     const res = await fetch('/api/assist', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        text, now, intent: intent || null, exact_names: exactNames, ...reply,
+        text, now, intent: intent || null, exact_names: exactNames, ...reply, recent: lately,
         people: people.map(({ id, name, relationship }) => ({ id, name, relationship })),
       }),
     });
@@ -233,12 +242,19 @@ const Assistant = (() => {
   };
 
   const accept = async () => {
-    const { apply, done, link, linkText, fields = [], places = [], chosen = -1 } = confirm;
+    const { apply, done, link, linkText, fields = [], places = [], chosen = -1, next } = confirm;
     // What the user corrected by hand replaces what was heard.
     const values = Object.fromEntries(fields.map((f) => [f.key, (f.value || '').trim()]));
     confirm = null;
     const result = apply(values, places[chosen]);  // may give a better link, such as the page of a new person
     onChange();
+    // Something else may follow from what was just written, such as a person to add.
+    const follow = next && next(result);
+    if (follow) {
+      const told = typeof done === 'function' ? done(values) : done;
+      await propose({ ...follow, say: `${told} ${follow.say}` });
+      return;
+    }
     await say(typeof done === 'function' ? done(values) : done, { link: (result && result.link) || link, linkText });
   };
 
@@ -267,9 +283,13 @@ const Assistant = (() => {
     return next(await lookUp(place, near));
   };
 
+  // The place the app proposes by itself: only one whose name is what was said.
+  const firstSure = (map) => (map.found.length && map.found[0].sure ? 0 : -1);
+
   const mapSay = ({ found, searched, near, note }) => {
     if (note) return ` ${note}`;
     if (!found.length) return searched ? ' I did not find this place on the map near you, so I keep it as you said it.' : '';
+    if (!found[0].sure) return ' I did not find exactly this place on the map. Places with a close name are on the screen.';
     const [first, ...others] = found;
     return ` On the map, I found ${first.name}${first.address ? `, ${first.address}` : ''}`
       + `${near.exact ? `, ${Places.far(first.km)} from here` : ''}.`
@@ -355,8 +375,8 @@ const Assistant = (() => {
             + (moved ? ` The new time: ${whenOf(start, now)}.` : '')
             + (r.new.place ? ` The new place: ${lower(r.new.place)}.${mapSay(map)}` : ''),
           question: 'Shall I change it?',
-          fields: r.new.place ? [{ key: 'place', label: 'New place', value: placeName(r.new.place, map.found[0]) }] : [],
-          places: map.found, chosen: map.found.length ? 0 : -1, saidPlace: r.new.place,
+          fields: r.new.place ? [{ key: 'place', label: 'New place', value: placeName(r.new.place, map.found[firstSure(map)]) }] : [],
+          places: map.found, chosen: firstSure(map), saidPlace: r.new.place,
           apply: (v, spot) => {
             SampleData.changeEvent(e.id, { start, ...(r.new.place ? { place: v.place, ...spotOf(spot) } : {}) });
           },
@@ -375,22 +395,27 @@ const Assistant = (() => {
           say: `${e.title}, ${dayName(start, now)} at ${Speech.time(start)}${placeOf(e)}.${mapSay(map)}`,
           fields: [
             { key: 'title', label: 'What', value: e.title },
-            { key: 'place', label: 'Where', value: placeName(e.place, map.found[0]) },
+            { key: 'place', label: 'Where', value: placeName(e.place, map.found[firstSure(map)]) },
           ],
-          places: map.found, chosen: map.found.length ? 0 : -1, saidPlace: e.place || '',
-          apply: (v, spot) => {
-            SampleData.add('events', {
+          places: map.found, chosen: firstSure(map), saidPlace: e.place || '',
+          apply: (v, spot) => ({
+            event: SampleData.add('events', {
               title: v.title || e.title, start, place: v.place, ...spotOf(spot),
               personIds: e.people.filter((p) => p.id).map((p) => p.id),
-            });
-          },
+            }),
+          }),
+          // Someone in the event who is not known yet: offer to add them.
+          next: ({ event }) => newPersonFor(event, e.people.filter((p) => !p.id).map((p) => p.name)),
           done: 'Done. It is in your agenda.',
           link: `#/agenda/${e.date}`, linkText: 'See it in the agenda',
         }));
       }
 
+      case 'greet':
+        return say('Hello. Tell me what you need. For example: what do I have today?');
+
       case 'add_person': {
-        if (r.ask) return askFor(r.ask, r.intent, text);
+        if (r.ask) return askFor(r.ask, r.intent, text, r.asked);
         if (r.known) {
           const p = personById(r.person.id);
           return say(`${p.name} is already in your people: ${lower(p.relationship)}.`,
@@ -403,6 +428,7 @@ const Assistant = (() => {
           fields: [{ key: 'name', label: 'Name', value: p.name }],
           apply: (v) => {
             const added = addPerson({ ...p, name: v.name || p.name });
+            about(added.name);
             if (r.connection) addConnection({ ...r.connection, a: { id: added.id, name: added.name } });
             return { link: `#/people/${added.id}` };
           },
@@ -416,7 +442,7 @@ const Assistant = (() => {
         return propose({
           say: `${u.name} is ${lower(u.relationship)}.`,
           question: 'Shall I note it?',
-          apply: () => { SampleData.updatePerson(u.personId, { relationship: u.relationship, link: u.link }); },
+          apply: () => { SampleData.updatePerson(u.personId, { relationship: u.relationship, link: u.link }); about(u.name); },
           done: `Done. ${u.name} is noted as ${lower(u.relationship)}.`,
           link: `#/people/${u.personId}`, linkText: `Open ${u.name}'s page`,
         });
@@ -442,7 +468,7 @@ const Assistant = (() => {
           fields: [{ key: 'text', label: 'Text', value: memo.text }],
           apply: (v) => {
             const text = v.text || memo.text;
-            if (memo.personId) SampleData.add('memos', { personId: memo.personId, date, text });
+            if (memo.personId) { SampleData.add('memos', { personId: memo.personId, date, text }); about(memo.about); }
             else SampleData.add('notes', { date, subject: memo.about, text });
           },
           done: memo.personId ? `Done. It is on ${memo.about}'s page.` : 'Done. It is in your notes of the day.',
@@ -529,6 +555,7 @@ const Assistant = (() => {
         ? `I do not know ${r.unknownName} yet. You can say: add a new person called ${r.unknownName}.`
         : 'I am not sure who you mean. Say the name again, for example: who is Rose?'];
     }
+    about(p.name);
     const link = { link: `#/people/${p.id}`, linkText: `Open ${p.name}'s page` };
     const news = memos.filter((m) => m.personId === p.id).sort((a, b) => b.date - a.date);
     const links = connections.filter((c) => c.a === p.id || c.b === p.id)
@@ -597,6 +624,28 @@ const Assistant = (() => {
     photo: null,
     facts: [],
   });
+
+  // After an event with someone unknown: "Saba is not in your people yet. Shall I add Saba?"
+  // One person at a time; the others follow.
+  const newPersonFor = (event, names) => {
+    const [name, ...others] = names.filter((n) => !people.some((p) => p.name.toLowerCase() === n.toLowerCase()));
+    if (!name) return null;
+    return {
+      say: `${name} is not in your people yet.`,
+      question: `Shall I add ${name}?`,
+      fields: [{ key: 'name', label: 'Name', value: name }],
+      apply: (v) => {
+        const added = addPerson({ name: v.name || name });
+        about(added.name);
+        // The event now shows this person.
+        const kept = SampleData.changeEvent(event.id, { personIds: [...event.personIds, added.id] }) || event;
+        return { link: `#/people/${added.id}`, event: kept };
+      },
+      next: (result) => newPersonFor(result.event, others),
+      done: (v) => `Done. ${v.name || name} is in your people. Tell me who ${v.name || name} is, for example: ${v.name || name} is my friend.`,
+      link: '#/people', linkText: 'Open the page',
+    };
+  };
 
   // Both ends of a connection must be people: unknown names are added as new people.
   const addConnection = (c) => {
