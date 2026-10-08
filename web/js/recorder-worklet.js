@@ -1,0 +1,10 @@
+// Runs on the audio thread: forwards each block of microphone samples to the page.
+class Recorder extends AudioWorkletProcessor {
+  process(inputs) {
+    const channel = inputs[0][0];
+    if (channel) this.port.postMessage(channel.slice());
+    return true;
+  }
+}
+
+registerProcessor('recorder', Recorder);

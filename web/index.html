@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Dezheimer</title>
+  <!-- On a phone, "Add to Home Screen" makes it open like an app, without the browser bars. -->
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="icon-180.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Dezheimer">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="theme-color" content="#FBF7F0">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div id="reminder" class="reminder" role="alert" hidden>
+    <span aria-hidden="true">🔔</span>
+    <p></p>
+    <button class="button" type="button">OK</button>
+  </div>
+
+  <main id="screen"></main>
+
+  <nav class="tabs" aria-label="Main">
+    <a href="#/" data-tab="home"><span class="tab-icon" aria-hidden="true">🏠</span>Today</a>
+    <a href="#/agenda" data-tab="agenda"><span class="tab-icon" aria-hidden="true">📅</span>Agenda</a>
+    <a href="#/people" data-tab="people"><span class="tab-icon" aria-hidden="true">👥</span>People</a>
+    <a href="#/diary" data-tab="diary"><span class="tab-icon" aria-hidden="true">📖</span>Diary</a>
+    <a href="#/listen" data-tab="listen"><span class="tab-icon" aria-hidden="true">🎤</span>Listen</a>
+  </nav>
+
+  <!-- Plain scripts (no modules) so the prototype opens by double-clicking this file. -->
+  <script src="js/dates.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/mic.js"></script>
+  <script src="js/speech.js"></script>
+  <script src="js/places.js"></script>
+  <script src="js/assistant.js"></script>
+  <script src="js/views.js"></script>
+  <script src="js/graph.js"></script>
+  <script src="js/commands.js"></script>
+  <script src="js/memory.js"></script>
+  <script src="js/listen.js"></script>
+  <script src="js/reminders.js"></script>
+  <script src="js/account.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

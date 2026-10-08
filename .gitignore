@@ -1,0 +1,13 @@
+.DS_Store
+Thumbs.db
+.vscode/
+node_modules/
+__pycache__/
+.venv/
+.env
+
+# Recordings and transcripts are personal data and must never be committed.
+recordings/
+transcripts/
+# What the tester said to the assistant, kept by the improvement mode.
+feedback/

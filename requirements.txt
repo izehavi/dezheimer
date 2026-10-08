@@ -1,0 +1,9 @@
+# PyTorch built for NVIDIA graphics cards (CUDA 12.8). It also runs on the processor alone.
+--extra-index-url https://download.pytorch.org/whl/cu128
+torch==2.11.0+cu128
+transformers==5.19.0
+fastapi==0.142.2
+uvicorn==0.54.0
+numpy==2.5.3
+# Only for start-phone.bat: makes the certificate of the secure address.
+cryptography==50.0.2
