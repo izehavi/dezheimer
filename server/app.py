@@ -90,8 +90,23 @@ async def transcribe(request: Request):
     # The audio is transcribed in memory and dropped, unless the user switched on
     # "keep the sound of my voice": the phrase is then kept to measure the speech model.
     if request.headers.get("x-keep") == "1" and text:
-        return {"text": text, "audio": recordings.keep(audio, sample_rate, text, vocabulary, MODEL_NAME)}
+        # When the user reads a sentence aloud, the app sends its exact words.
+        said = unquote(request.headers.get("x-said", "")).strip()[:500] or None
+        return {"text": text, "audio": recordings.keep(audio, sample_rate, text, vocabulary, MODEL_NAME, said)}
     return {"text": text}
+
+
+@app.get("/api/recordings")
+def kept_recordings():
+    """How much of the user's voice is kept on this computer."""
+    return recordings.summary()
+
+
+@app.delete("/api/recordings/{name}")
+def forget_recording(name: str):
+    """Delete one kept phrase: the sentence was not read right, or the user reads it again."""
+    recordings.delete(name)
+    return {}
 
 
 class KnownPerson(BaseModel):

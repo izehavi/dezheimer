@@ -86,7 +86,8 @@ class Transcriber:
                 options["prompt_ids"] = self._processor.get_prompt_ids(vocabulary, return_tensors="pt").to(self.device)
             with torch.no_grad():
                 ids = self._model.generate(
-                    inputs.input_features.to(self.device),
+                    # Some large models are stored in half precision: the sound must be given the same way.
+                    inputs.input_features.to(self.device, dtype=self._model.dtype),
                     attention_mask=inputs.attention_mask.to(self.device),
                     **options,
                 )

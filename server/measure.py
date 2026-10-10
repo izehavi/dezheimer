@@ -76,8 +76,7 @@ def label(play: bool) -> None:
         if answer.lower() == "d":
             recordings.delete(r["name"])
             continue
-        note = {key: r[key] for key in ("heard", "vocabulary", "model")}
-        recordings.write_note(r["name"], {**note, "said": answer or r["heard"]})
+        recordings.update(r["name"], said=answer or r["heard"], source="corrected")
 
 
 def compare(models: list[str], show_misses: bool = False) -> None:

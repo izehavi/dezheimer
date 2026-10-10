@@ -77,6 +77,16 @@ When you add an event, the app looks for its place on the map around you, and re
 
 After each request, the app asks "Did I do what you wanted?". Press **Yes, it did what I wanted**, or **No** and write what you wanted. Every exchange is saved as soon as it ends, with your answer when you give one, in `%USERPROFILE%\.dezheimer\feedback\feedback.jsonl`, outside the project folder, and is used to improve the app. If the phone cannot reach the computer at that moment, the exchange waits on the phone and is sent when it can. The mode can be switched off under "What can I say?".
 
+### Teach the app your voice
+
+The goal is a speech model small enough to run inside the phone. A small model hears a new voice badly until it is trained on it, and training needs recordings of you with the exact words that were said. There are two ways to make them, and both end in the same place.
+
+**Read aloud, ten minutes at a time.** At the bottom of the home screen, open **Teach the app my voice**, on the phone or on the computer. First type the names of the people you talk about and the places you go to: they are put in the sentences, because these are the words a speech model gets wrong. Press **Start reading** and read each sentence, then stay quiet for a moment: the next one comes by itself. A session is 120 sentences, the kind of things you say to the assistant, different each time. A sentence that was cut or not heard comes back once. Because the words are known exactly, these are the best recordings.
+
+**Just use the app.** With **Keep the sound of my voice** switched on (under "What can I say?"), everything you say to the assistant is kept too. Nobody has checked those words, so a much larger speech model writes them down afterwards, on the computer.
+
+Then double-click `dataset.bat` on the computer. It writes down the unchecked phrases with the large model (the first run downloads it, about 1.6 GB), and makes two files in `%USERPROFILE%\.dezheimer\dataset`: `train.jsonl` to train the small model on, and `test.jsonl` to measure it with. The test file only holds phrases a person is sure of, and is never trained on.
+
 ### Measure how well the app hears you
 
 Under "What can I say?", switch on **Keep the sound of my voice**. It is off by default. Each request you then say to the assistant is kept as a sound file in `%USERPROFILE%\.dezheimer\recordings`, on the computer that runs Dezheimer, with what the app heard. The Listen tab never keeps any sound.

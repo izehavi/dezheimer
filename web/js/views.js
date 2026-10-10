@@ -95,7 +95,8 @@ const Views = (() => {
         </a>
       </section>` : ''}
 
-      <p class="page-action account-link"><a href="#/account">Account, backup and my own data</a></p>`;
+      <p class="page-action account-link"><a href="#/read">Teach the app my voice</a></p>
+      <p class="account-link"><a href="#/account">Account, backup and my own data</a></p>`;
   };
 
   // ---- Agenda ----

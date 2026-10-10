@@ -6,6 +6,7 @@
 //   #/diary[/DAY]       diary
 //   #/listen            record a conversation
 //   #/account           sign in, backup
+//   #/read              read sentences aloud, to teach the app the user's voice
 (() => {
   const screen = document.getElementById('screen');
   const tabs = document.querySelectorAll('.tabs a');
@@ -29,6 +30,9 @@
     } else if (tab === 'account') {
       active = 'account';
       html = Account.view();
+    } else if (tab === 'read') {
+      active = 'read';
+      html = Reading.view();
     } else if (tab === 'listen') {
       active = 'listen';
       html = Listen.view();
@@ -39,12 +43,14 @@
     // The microphone only stays on while the screen that uses it is showing.
     if (active !== 'listen') Listen.stop();
     if (active !== 'home') Assistant.stop();
+    if (active !== 'read') Reading.stop();
 
     screen.innerHTML = html;
     if (active === 'account') { Account.mount(); }
     if (active === 'listen') Listen.mount();
     if (active === 'home') Assistant.mount(render);
     if (active === 'connections') { Graph.mount(); active = 'people'; }
+    if (active === 'read') { Reading.mount(); active = 'home'; }
     if (active === 'account') active = 'home';
     tabs.forEach((a) => {
       if (a.dataset.tab === active) a.setAttribute('aria-current', 'page');
