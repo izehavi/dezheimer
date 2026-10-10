@@ -6,7 +6,7 @@
 //   #/diary[/DAY]       diary
 //   #/listen            record a conversation
 //   #/account           sign in, backup
-//   #/read              read sentences aloud, to teach the app the user's voice
+//   #/read              read a long text aloud, to teach the app the user's voice
 (() => {
   const screen = document.getElementById('screen');
   const tabs = document.querySelectorAll('.tabs a');

@@ -9,10 +9,8 @@
 //
 // `keep`: the server keeps the sound of each finished phrase, to measure the speech model.
 // onPhrase then also gets the name of the recording.
-// `said`: a function that gives the exact words of the phrase, when the user is reading
-// a sentence aloud (reading.js); they are kept with the sound.
-// `onCut`: called as soon as a phrase ends, before it is written down.
-// `partials: false`: no provisional transcription while a phrase is spoken.
+// `onBlock`: gets the sound as it comes, with its rate, and nothing is cut into phrases
+// or written down. Used to record a long reading (reading.js).
 //
 // Only one screen uses the microphone at a time: starting it stops the previous use.
 const Mic = (() => {
@@ -68,7 +66,7 @@ const Mic = (() => {
   // The user's own words, given to the speech model so that it writes them right:
   // the names of their people, and the places in their agenda.
   const vocabulary = () => {
-    // Also the names and places the user typed on the "Teach the app my voice" screen.
+    // Also the names and places the user typed on the "Teach the app my voice" screen (reading.js).
     const mine = typeof Reading === 'undefined' ? { people: [], places: [] } : Reading.myWords();
     const names = [...new Set([...SampleData.people.map((p) => p.name), ...mine.people])];
     const places = [...new Set([...SampleData.events.map((e) => (e.place || '').replace(/^(At|In) /, '')), ...mine.places])]
@@ -152,6 +150,7 @@ const Mic = (() => {
     for (let i = 0; i < block.length; i++) sum += block[i] * block[i];
     const level = Math.sqrt(sum / block.length);
     handlers.onLevel?.(level);
+    if (handlers.onBlock) { handlers.onBlock(block, context.sampleRate); return; }
 
     chunks.push(block);
     samples += block.length;
@@ -187,19 +186,16 @@ const Mic = (() => {
   const hasSpeech = () => context && speechSamples > MIN_SPEECH_S * context.sampleRate;
 
   const endPhrase = () => {
-    const h = handlers;
-    const spoken = hasSpeech();
-    if (spoken) {
+    if (hasSpeech()) {
+      const h = handlers;
       const time = new Date();
-      transcribe(phraseAudio(), h, (text, audio) => h.onPhrase?.(text, time, audio), !!h.keep, h.said?.() || '');
+      transcribe(phraseAudio(), h, (text, audio) => h.onPhrase?.(text, time, audio), !!h.keep);
     }
     resetPhrase();
-    if (spoken) h.onCut?.();
   };
 
   const sendPartial = () => {
     handlers.onTick?.();
-    if (handlers.partials === false) return;
     // Skipped when the server is still busy: only the final transcription must not be lost.
     if (!hasSpeech() || pending > 0) return;
     const h = handlers;
@@ -209,7 +205,7 @@ const Mic = (() => {
 
   // ---- Server ----
 
-  const transcribe = (recorded, h, onText, keep = false, said = '') => {
+  const transcribe = (recorded, h, onText, keep = false) => {
     const { audio, rate } = to16k(recorded, context.sampleRate);
     // Sent as 16-bit numbers: half the size, which matters on a phone network.
     const sound = new Int16Array(audio.length);
@@ -228,7 +224,6 @@ const Mic = (() => {
             'X-Sample-Format': 'int16',
             'X-Vocabulary': encodeURIComponent(vocabulary()),
             ...(keep ? { 'X-Keep': '1' } : {}),
-            ...(said ? { 'X-Said': encodeURIComponent(said) } : {}),
           },
           body: sound.buffer,
         });
@@ -250,7 +245,7 @@ const Mic = (() => {
   };
 
   return {
-    start, stop, stats, usable, APP_URL,
+    start, stop, stats, usable, to16k, APP_URL,
     isListening: (owner) => listening && (!owner || handlers.owner === owner),
   };
 })();

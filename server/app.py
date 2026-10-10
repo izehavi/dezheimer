@@ -15,7 +15,7 @@ from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
-from . import accounts, recordings
+from . import accounts, readings, recordings
 from .assistant import assist
 from .commands import parse_command
 from .intents import classifier
@@ -90,23 +90,48 @@ async def transcribe(request: Request):
     # The audio is transcribed in memory and dropped, unless the user switched on
     # "keep the sound of my voice": the phrase is then kept to measure the speech model.
     if request.headers.get("x-keep") == "1" and text:
-        # When the user reads a sentence aloud, the app sends its exact words.
-        said = unquote(request.headers.get("x-said", "")).strip()[:500] or None
-        return {"text": text, "audio": recordings.keep(audio, sample_rate, text, vocabulary, MODEL_NAME, said)}
+        return {"text": text, "audio": recordings.keep(audio, sample_rate, text, vocabulary, MODEL_NAME)}
     return {"text": text}
 
 
-@app.get("/api/recordings")
-def kept_recordings():
-    """How much of the user's voice is kept on this computer."""
-    return recordings.summary()
+# ---- A long text read aloud, to teach a small speech model the user's voice ----
 
 
-@app.delete("/api/recordings/{name}")
-def forget_recording(name: str):
-    """Delete one kept phrase: the sentence was not read right, or the user reads it again."""
-    recordings.delete(name)
+class ReadingDone(BaseModel):
+    title: str = Field(max_length=200)
+    text: str = Field(min_length=1, max_length=20000)   # the text that was on the screen
+    pieces: int = Field(ge=1, le=readings.MAX_PIECES)
+
+
+@app.get("/api/readings")
+def kept_readings():
+    """How much reading aloud is kept on this computer."""
+    return readings.summary()
+
+
+@app.post("/api/readings/{session}/audio/{index}")
+async def reading_piece(session: str, index: int, request: Request):
+    """One piece of a reading going on. Body: mono audio as 16-bit samples."""
+    try:
+        sample_rate = int(request.headers.get("x-sample-rate", SAMPLE_RATE))
+    except ValueError:
+        raise HTTPException(400, "X-Sample-Rate must be a number.")
+    if not 8000 <= sample_rate <= MAX_SAMPLE_RATE:
+        raise HTTPException(400, "Unsupported sample rate.")
+    try:
+        readings.add_piece(session, index, sample_rate, await request.body())
+    except ValueError as error:
+        raise HTTPException(400, str(error))
     return {}
+
+
+@app.post("/api/readings/{session}/done")
+def reading_done(session: str, done: ReadingDone):
+    """The reading is over: its pieces become one recording, kept with the text."""
+    try:
+        return {"seconds": readings.finish(session, done.pieces, done.title, done.text)}
+    except ValueError as error:
+        raise HTTPException(400, str(error))
 
 
 class KnownPerson(BaseModel):

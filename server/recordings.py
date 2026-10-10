@@ -2,8 +2,8 @@
 
 Nothing is kept unless the user switched on "keep the sound of my voice" in the app.
 Each phrase said to the assistant is then saved as a sound file, with what the speech
-model heard and the vocabulary it was given. So is each sentence the user reads aloud on
-the "Teach the app my voice" screen, with its exact words. `python -m server.measure`
+model heard and the vocabulary it was given. The pieces of a text the user read aloud
+(server/readings.py) are kept here too, with their exact words. `python -m server.measure`
 and `python -m server.dataset` use them.
 
 They are kept with the accounts, outside the project folder, and never leave this computer.
@@ -26,10 +26,13 @@ RECORDINGS_DIR = Path(DATA_DIR) / "recordings"
 def keep(audio: np.ndarray, sample_rate: int, heard: str, vocabulary: str, model: str, said: str | None = None) -> str:
     """Save one phrase, and return its name.
 
-    `said` is given when the user was reading a sentence aloud: its exact words are known.
+    `said` is given when the phrase is a piece of a text read aloud: its exact words are known.
     """
     RECORDINGS_DIR.mkdir(parents=True, exist_ok=True)
-    name = f"{dt.datetime.now():%Y%m%d-%H%M%S}-{secrets.token_hex(2)}"
+    while True:
+        name = f"{dt.datetime.now():%Y%m%d-%H%M%S}-{secrets.token_hex(2)}"
+        if not (RECORDINGS_DIR / f"{name}.wav").exists():   # many are kept in the same second
+            break
     with wave.open(str(RECORDINGS_DIR / f"{name}.wav"), "wb") as file:
         file.setnchannels(1)
         file.setsampwidth(2)
