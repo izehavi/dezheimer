@@ -5,7 +5,10 @@
 // server every PARTIAL_EVERY_MS for a provisional transcription; when it ends,
 // it is transcribed one last time.
 //
-//   Mic.start({ owner, single, onPhrase, onPartial, onLevel, onTick, onError, onStop })
+//   Mic.start({ owner, single, keep, onPhrase, onPartial, onLevel, onTick, onError, onStop })
+//
+// `keep`: the server keeps the sound of each finished phrase, to measure the speech model.
+// onPhrase then also gets the name of the recording.
 //
 // Only one screen uses the microphone at a time: starting it stops the previous use.
 const Mic = (() => {
@@ -181,7 +184,7 @@ const Mic = (() => {
     if (hasSpeech()) {
       const h = handlers;
       const time = new Date();
-      transcribe(phraseAudio(), h, (text) => h.onPhrase?.(text, time));
+      transcribe(phraseAudio(), h, (text, audio) => h.onPhrase?.(text, time, audio), !!h.keep);
     }
     resetPhrase();
   };
@@ -197,7 +200,7 @@ const Mic = (() => {
 
   // ---- Server ----
 
-  const transcribe = (recorded, h, onText) => {
+  const transcribe = (recorded, h, onText, keep = false) => {
     const { audio, rate } = to16k(recorded, context.sampleRate);
     let sentAt;
     pending += 1;
@@ -211,6 +214,7 @@ const Mic = (() => {
             'Content-Type': 'application/octet-stream',
             'X-Sample-Rate': String(rate),
             'X-Vocabulary': encodeURIComponent(vocabulary()),
+            ...(keep ? { 'X-Keep': '1' } : {}),
           },
           body: audio.buffer,
         });
@@ -219,10 +223,10 @@ const Mic = (() => {
         if (!res.ok) throw new Error(`the server answered ${res.status}: ${(await res.text()).slice(0, 200)}`);
         return res.json();
       })
-      .then(({ text }) => {
+      .then(({ text, audio }) => {
         stats.answered += 1;
         stats.lastMs = Math.round(performance.now() - sentAt);
-        onText(text);
+        onText(text, audio);
       })
       .catch((err) => h.onError?.(
         err instanceof TypeError

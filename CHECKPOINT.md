@@ -2,7 +2,7 @@
 
 Where the project stands. Updated at the end of each work session or milestone. The plan itself is in [GUIDELINE.md](GUIDELINE.md).
 
-**Last update:** 2026-10-08
+**Last update:** 2026-10-10
 
 ## Current state
 
@@ -34,8 +34,9 @@ What is solid and what is not:
 
 The project is in a practice phase. The project owner uses the assistant by voice; after each request the app asks "Did I do what you wanted?" with two buttons: **Yes, it did what I wanted**, and **No**, which opens a box to explain what was wanted.
 
-- Every exchange is saved as one line in `feedback/feedback.jsonl`: what was heard, what the app answered, what the server understood at each step (intent, score, details), the verdict (`yes`, `no`, or `unanswered`), and the comment.
-- The folder is not committed to git, because it holds what the tester said.
+- Every exchange is saved as one line in `%USERPROFILE%\.dezheimer\feedback\feedback.jsonl`: what was heard, what the app answered, what the server understood at each step (intent, score, details), the verdict (`yes`, `no`, or `unanswered`), and the comment.
+- The file is outside the project since 2026-10-10, because it holds what the tester said and the project folder is synced to OneDrive. The 33 exchanges of rounds 1 and 2 were moved there.
+- **To measure the speech model:** the switch "Keep the sound of my voice" (off by default) keeps each request said to the assistant as a sound file in `%USERPROFILE%\.dezheimer\recordings`, with what was heard and the vocabulary given. The exchange in the feedback file names the recording. `measure.bat` then asks what was really said and compares the model sizes.
 - **To improve the app:** read that file, group the `no` and `unanswered` lines by cause (misheard words, wrong intent, wrong detail, wrong answer), then fix each cause with an example sentence in [server/intents.py](server/intents.py), a rule in [server/assistant.py](server/assistant.py) or [server/commands.py](server/commands.py), and a test. The `yes` lines become tests too, so that what works keeps working.
 - The mode is on by default. It can be switched off under "What can I say?" on the home screen.
 
@@ -124,10 +125,11 @@ Double-click [start.bat](start.bat). The app opens at http://localhost:8765. The
 | [server/intents.py](server/intents.py) | Finds what a sentence asks for, by meaning, with `sentence-transformers/all-MiniLM-L6-v2` and its list of example sentences. |
 | [server/assistant.py](server/assistant.py) | `POST /api/assist`: the intent, then the details read by rules (names, relationship, how they met, the memo text, the day asked about...). |
 | [server/accounts.py](server/accounts.py) | `/api/account/...`: accounts and backups in a SQLite file. Passwords are stored as salted scrypt hashes, sign-in tokens as hashes. |
+| [server/recordings.py](server/recordings.py), [server/measure.py](server/measure.py) | The phrases kept when the user asks for it, and `measure.bat`: writes down what was really said (`python -m server.measure label`), then scores tiny, base, small and the small model for every language on them (`python -m server.measure`). |
 | [server/commands.py](server/commands.py) | Reads an event from a sentence: day, time, people, place, activity. Also `POST /api/command`, used by the Listen screen. |
 | [server/understanding.py](server/understanding.py) | `POST /api/understand`: summary and memos from a whole conversation with `Qwen/Qwen2.5-3B-Instruct`, checked by code. |
 
-Tests are in [tests/](tests/): 70 tests, run with `python -m unittest discover tests`.
+Tests are in [tests/](tests/): 75 tests, run with `python -m unittest discover tests`.
 
 ### How a voice request works
 
@@ -156,6 +158,7 @@ To make a request more robust, add example sentences to `EXAMPLES` in [server/in
 
 ## What was tested
 
+- **Keeping and measuring, 2026-10-10,** with three sentences read by a synthetic voice and sent to the server as the app does: a phrase is kept only when asked; labelling, skipping and deleting work; the four models were compared. On these two labelled phrases the numbers mean nothing, they only show that the tool runs. In the app, the switch appears, is off at first, and stays on once set. Not tested: a phrase said into a real microphone with the switch on.
 - **Speech model, 2026-10-08:** ten sentences read by two synthetic voices, three model sizes, with and without the vocabulary. With the vocabulary, every size wrote "Elinor", "Lothan" and "Carmel Coffee" correctly where it had written "Eleanor", "Lathan" or "caramel coffee" without it. On the clear voice all three sizes were otherwise right. On a French synthetic voice reading English, all three made many mistakes and "small" was only slightly better; this voice is a much harder case than a real speaker, so it does not settle the choice of size. A real comparison needs recordings of the tester.
 - **Feedback round 2, replayed typed** in a headless browser: the unknown person, the name asked once, "he is my grandfather" after adding someone, the close place name not chosen, the greeting and "mhm" all gave what the tester wanted.
 - **iPhone prototype, 2026-10-08,** from the computer only: the secure address is accepted with the computer's certificate and refused without it; without the code, the pages show the code screen and the services answer "not allowed"; a wrong code is refused and the right one opens the app; the app on the computer needs no code. At the size of an iPhone 13, every screen fits the width and a typed request was answered. Not tested, because it needs the iPhone: installing and trusting the certificate, the microphone, the sound of the voice, the position, "Add to Home Screen".
@@ -208,7 +211,7 @@ To make a request more robust, add example sentences to `EXAMPLES` in [server/in
 ## Next steps
 
 1. **Third round of practice**, mostly on the iPhone.
-2. **Decide on fine-tuning the speech model.** The plan: first measure. Keep, with the tester's agreement, the audio of each phrase next to what was really said; about 100 phrases are enough to compare model sizes fairly, and one to two hours are needed to fine-tune. Fine-tuning is most useful to make a phone-sized model (tiny or base) as good on this voice as the larger one.
+2. **Decide on fine-tuning the speech model.** The plan: first measure. The tool exists since 2026-10-10: switch on "Keep the sound of my voice", practise, then run `measure.bat`. About 100 phrases are enough to compare model sizes fairly, and one to two hours are needed to fine-tune. Fine-tuning is most useful to make a phone-sized model (tiny or base) as good on this voice as the larger one.
 3. **Try the prototype on the iPhone** (`start-phone.bat`) and report what does not work: the microphone, the voice and the position can behave differently on an iPhone.
 4. Add the missing voice requests: correct or remove a memo, a permanent fact about a person; choose a place on the map by voice.
 5. Build the "pick the sentences worth keeping" step and compare it with the language model on a set of about 20 conversations.
@@ -231,6 +234,7 @@ To make a request more robust, add example sentences to `EXAMPLES` in [server/in
 | 2026-10-08 | The first iPhone prototype is the web app opened from the computer over the home Wi-Fi, with its own certificate and a code. | An iPhone app cannot be built on Windows, and this needs no rewriting. Nothing goes through the internet, unlike a tunnel service. The code is needed because anyone on the same Wi-Fi can reach the address. |
 | 2026-10-08 | The project is saved on GitHub (github.com/izehavi/dezheimer) each time something works. | Asked by the project owner. |
 | 2026-10-08 | New work that needs no model is written in the app, not in the server. | The app must end up on a phone, which cannot run the Python server. |
+| 2026-10-10 | The sound of a request is kept only when the user switches it on, only for the assistant, and outside the project folder. | It is needed to measure the speech model on a real voice. The Listen tab hears other people, who have not agreed. The project folder is synced to OneDrive. |
 | 2026-10-07 | Everything the app is about to write down must be confirmed first. | A wrong memory is worse than no memory (guideline, principle 2). |
 | 2026-10-07 | Voice requests are understood with a small sentence model and rules, not with a language model. | It is fast (about 50 ms), small enough for a phone, and predictable. The project owner asked for requests to work by meaning, on a phone, locally. |
 | 2026-10-07 | Voice first: the main button of the home screen is the microphone. | Asked by the project owner, for ease of use by an older person. |
@@ -254,4 +258,5 @@ To make a request more robust, add example sentences to `EXAMPLES` in [server/in
 - **2026-10-08** — The place of an event is looked for on the map around the user. Guideline: the path to a phone in three steps.
 - **2026-10-08** — iPhone prototype: `start-phone.bat`, secure address with the computer's own certificate, code, home-screen icon, microphone and voice adapted to the iPhone. Project saved on GitHub.
 - **2026-10-08** — Second round of feedback, partly from the iPhone: 12 causes fixed, 9 new tests.
+- **2026-10-10** — Measuring the speech model: opt-in keeping of the sound of each request, `measure.bat` to label and compare models, feedback moved out of the OneDrive folder.
 - **2026-10-07** — Improvement mode: a verdict after each request, saved for improving the app. An event now needs a place and a person, and the app asks for them.

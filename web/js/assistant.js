@@ -31,6 +31,11 @@ const Assistant = (() => {
   const IMPROVE_KEY = 'dezheimer.improve';
   let improve = true;
   try { improve = localStorage.getItem(IMPROVE_KEY) !== 'off'; } catch { /* stays on */ }
+  // Off unless the user asks for it: the sound of each request is kept on the computer
+  // that runs the server, to measure how well the speech model hears this voice.
+  const KEEP_KEY = 'dezheimer.keepSound';
+  let keepSound = false;
+  try { keepSound = localStorage.getItem(KEEP_KEY) === 'on'; } catch { /* stays off */ }
   let trace = null;              // the exchange going on: { startedAt, turns, calls }
   let review = null;             // the exchange just finished, waiting for the user's verdict
 
@@ -84,9 +89,10 @@ const Assistant = (() => {
     const on = await Mic.start({
       owner: 'assistant',
       single: true,
+      keep: keepSound,
       onPartial: (text) => { live = text; resetSilence(); render(); },
       // Ignored when the listening was interrupted before the phrase came back.
-      onPhrase: (text) => { if (mine === ear && phase === 'thinking') heard(text, 'voice'); },
+      onPhrase: (text, time, audio) => { if (mine === ear && phase === 'thinking') heard(text, 'voice', audio); },
       onLevel: (level) => {
         const button = $('talk');
         if (button) button.style.setProperty('--level', Math.min(1, level * 12).toFixed(2));
@@ -135,7 +141,8 @@ const Assistant = (() => {
   };
 
   // `source` is how the words came in: 'voice', 'typed' or 'button'.
-  const heard = async (text, source) => {
+  // `audio` is the name of the recording, when the sound of the phrase was kept.
+  const heard = async (text, source, audio) => {
     text = (text || '').trim();
     live = '';
     if (!text) { phase = 'idle'; render(); return; }
@@ -147,7 +154,7 @@ const Assistant = (() => {
       trace = { startedAt: new Date().toISOString(), turns: [], calls: [] };
       namesSettled = false;
     }
-    trace.turns.push({ who: 'you', text, source });
+    trace.turns.push({ who: 'you', text, source, ...(audio ? { audio } : {}) });
 
     if (townAsk) {
       // The answer to "In which town are you?": the place is then looked for around that town.
@@ -744,6 +751,11 @@ const Assistant = (() => {
           <input id="improve-switch" type="checkbox"${improve ? ' checked' : ''}>
           Improvement mode: after each request, ask me if it did what I wanted
         </label>
+        <label class="improve-switch">
+          <input id="keep-switch" type="checkbox"${keepSound ? ' checked' : ''}>
+          Keep the sound of my voice when I talk to the app, to measure how well it hears me.
+          It stays on the computer that runs Dezheimer.
+        </label>
         ${Places.town() ? `
           <p class="source">Places are looked for around ${esc(Places.town().name)} when this device does not give its position.
             <button class="link-button" type="button" id="forget-town">Forget this town</button></p>` : ''}
@@ -842,6 +854,11 @@ const Assistant = (() => {
       }
     });
     box.addEventListener('change', (e) => {
+      if (e.target.id === 'keep-switch') {
+        keepSound = e.target.checked;
+        try { localStorage.setItem(KEEP_KEY, keepSound ? 'on' : 'off'); } catch { /* until the page is closed */ }
+        return;
+      }
       if (e.target.id !== 'improve-switch') return;
       improve = e.target.checked;
       if (!improve) review = null;

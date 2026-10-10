@@ -4,7 +4,7 @@ An external memory for people living with Alzheimer's disease.
 
 Dezheimer listens to daily life, writes down what happened, and turns it into three things the person can come back to at any time: an agenda, a memo for each family member and friend, and a personal diary. The goal is to make everyday life and social relationships easier when memory is no longer reliable.
 
-> **Status:** first version of the whole chain, on example data: a voice assistant that adds events, people, connections and memos and answers questions aloud; spoken reminders; a connections map; and a language model that proposes diary summaries and memos from a recorded conversation. The assistant is not tested with a real voice yet, and the language model still misses about half of the news. See [CHECKPOINT.md](CHECKPOINT.md) for where we are and [GUIDELINE.md](GUIDELINE.md) for the full plan.
+> **Status:** first version of the whole chain, on example data: a voice assistant that adds events, people, connections and memos and answers questions aloud; spoken reminders; a connections map; and a language model that proposes diary summaries and memos from a recorded conversation. The assistant has been used by voice on a computer and on an iPhone, by the developer only; misheard words are its main weakness. The language model still misses about half of the news. See [CHECKPOINT.md](CHECKPOINT.md) for where we are and [GUIDELINE.md](GUIDELINE.md) for the full plan.
 
 ## Try it
 
@@ -52,7 +52,13 @@ When you add an event, the app looks for its place on the map around you, and re
 
 ### Improvement mode
 
-After each request, the app asks "Did I do what you wanted?". Press **Yes, it did what I wanted**, or **No** and write what you wanted. Each answer is saved in `feedback/feedback.jsonl` with the whole exchange, and is used to improve the app. The mode can be switched off under "What can I say?".
+After each request, the app asks "Did I do what you wanted?". Press **Yes, it did what I wanted**, or **No** and write what you wanted. Each answer is saved with the whole exchange in `%USERPROFILE%\.dezheimer\feedback\feedback.jsonl`, outside the project folder, and is used to improve the app. The mode can be switched off under "What can I say?".
+
+### Measure how well the app hears you
+
+Under "What can I say?", switch on **Keep the sound of my voice**. It is off by default. Each request you then say to the assistant is kept as a sound file in `%USERPROFILE%\.dezheimer\recordings`, on the computer that runs Dezheimer, with what the app heard. The Listen tab never keeps any sound.
+
+After some practice, double-click `measure.bat`. It plays each new phrase and shows what was heard: press Enter if it is right, or type what you really said (`d` deletes the recording). It then compares the sizes of the speech model on your phrases: the share of words heard wrong, and the share of your own names and places written right, with and without your vocabulary. About 100 phrases give a fair comparison. The first run downloads the models it does not have yet.
 
 ### Keep a backup
 
@@ -60,7 +66,7 @@ At the bottom of the home screen, open **Account and backup** and create an acco
 
 ### Record a conversation
 
-Open the **Listen** tab, switch on the microphone, allow the browser to use it, and speak in English. The audio stays on the computer and is never saved.
+Open the **Listen** tab, switch on the microphone, allow the browser to use it, and speak in English. The audio of this tab stays on the computer and is never saved.
 
 To add an event by voice, say a sentence that contains "in my agenda", for example:
 

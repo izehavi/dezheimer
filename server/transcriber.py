@@ -25,7 +25,8 @@ _NON_SPEECH = re.compile(r"^\s*[\[\(].*[\]\)]\s*$")
 
 
 class Transcriber:
-    def __init__(self):
+    def __init__(self, model_name: str = MODEL_NAME):
+        self.model_name = model_name
         self.ready = False
         self.error = None
         self.device = None
@@ -47,9 +48,9 @@ class Transcriber:
                 from transformers import WhisperForConditionalGeneration, WhisperProcessor
 
                 self.device = "cuda" if torch.cuda.is_available() else "cpu"
-                self._processor = WhisperProcessor.from_pretrained(MODEL_NAME)
+                self._processor = WhisperProcessor.from_pretrained(self.model_name)
                 self._model = (
-                    WhisperForConditionalGeneration.from_pretrained(MODEL_NAME).to(self.device).eval()
+                    WhisperForConditionalGeneration.from_pretrained(self.model_name).to(self.device).eval()
                 )
                 self.ready = True
                 self.error = None
@@ -76,6 +77,9 @@ class Transcriber:
                 audio, sampling_rate=SAMPLE_RATE, return_tensors="pt", return_attention_mask=True
             )
             options = {}
+            if not self.model_name.endswith(".en"):
+                # A model for every language must be told which one, or it guesses from the accent.
+                options.update(language="en", task="transcribe")
             vocabulary = vocabulary.strip()[:MAX_VOCABULARY_CHARS]
             if vocabulary:
                 # Whisper reads this as what was said just before: it then prefers these spellings.

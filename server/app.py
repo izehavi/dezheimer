@@ -14,7 +14,7 @@ from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
-from . import accounts
+from . import accounts, recordings
 from .assistant import assist
 from .commands import parse_command
 from .intents import classifier
@@ -76,10 +76,13 @@ async def transcribe(request: Request):
     if audio.size == 0:
         return {"text": ""}
 
-    # The audio is never written to disk: it is transcribed in memory and dropped.
     # Names and words the user is likely to say, sent by the app to help the speech model.
     vocabulary = unquote(request.headers.get("x-vocabulary", ""))
     text = await run_in_threadpool(transcriber.transcribe, audio, sample_rate, vocabulary)
+    # The audio is transcribed in memory and dropped, unless the user switched on
+    # "keep the sound of my voice": the phrase is then kept to measure the speech model.
+    if request.headers.get("x-keep") == "1" and text:
+        return {"text": text, "audio": recordings.keep(audio, sample_rate, text, vocabulary, MODEL_NAME)}
     return {"text": text}
 
 
@@ -141,9 +144,9 @@ def understand_transcript(request: UnderstandRequest):
 
 # ---- Improvement mode: what the user thought of each answer ----
 
-FEEDBACK_FILE = Path(
-    os.environ.get("DEZHEIMER_FEEDBACK_FILE", Path(__file__).resolve().parent.parent / "feedback" / "feedback.jsonl")
-)
+# Kept with the accounts, outside the project: it holds what the tester said, and the
+# project folder may be synced to a cloud drive.
+FEEDBACK_FILE = Path(os.environ.get("DEZHEIMER_FEEDBACK_FILE", accounts.DATA_DIR / "feedback" / "feedback.jsonl"))
 
 
 class Feedback(BaseModel):
@@ -156,7 +159,7 @@ def save_feedback(feedback: Feedback):
     line = json.dumps({"saved": dt.datetime.now().isoformat(timespec="seconds"), **feedback.record})
     if len(line) > 100_000:
         raise HTTPException(413, "The record is too large.")
-    FEEDBACK_FILE.parent.mkdir(exist_ok=True)
+    FEEDBACK_FILE.parent.mkdir(parents=True, exist_ok=True)
     with FEEDBACK_FILE.open("a", encoding="utf-8") as file:
         file.write(line + "\n")
     return {}
