@@ -219,6 +219,7 @@ To make a request more robust, add example sentences to `EXAMPLES` in [server/in
 - The connections map draws everyone on one circle: it gets crowded above about 12 people.
 - Automatic memos: see the table above. The summary of a conversation is not checked by code.
 - My day: a thing is "done" for the day it was ticked, there is no history to look at yet, and nothing tells a relative that the pills were not taken. The sentences it understands are a few fixed forms ("Did I ...", "I took / had / ate ..."), read in the app and not by meaning. The things good to know are not protected: no secret code should be written there before the backup is encrypted.
+- The voice of the app is an English voice of the device; the development computer has only French ones (Hortense, Julie, Paul) outside Chrome, so the app says there that an English voice must be added. Since 2026-10-10 the app never picks a novelty voice and prefers British or American English.
 - No photos, no caregiver screen.
 
 ## Open decisions

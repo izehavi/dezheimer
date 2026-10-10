@@ -748,6 +748,8 @@ const Assistant = (() => {
       </button>
       <p class="talk-label">${LABELS[phase]}</p>
       ${phase === 'idle' && !log.length ? '<p class="talk-hint">Tap the button, then ask or tell me something.</p>' : ''}
+      ${Speech.noEnglish() ? `<p class="source">This device has no English voice, so the app speaks English with the voice of
+        another language. On Windows: Settings, Time and language, Speech, Add voices, English. Or use Chrome, which brings its own.</p>` : ''}
 
       <div class="exchange" aria-live="polite">
         ${lines}

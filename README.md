@@ -29,7 +29,7 @@ The home screen starts with one large button. Tap it and say one thing, in Engli
 - "Give me some information about Nadia."
 - "Search for the radiator."
 
-The app answers aloud. Before it writes anything down, it reads it back and waits for "yes" or "no". It also reminds you aloud of each event 30 minutes before, 5 minutes before, and when it starts, as long as the app is open.
+The app answers aloud, with an English voice of the device. If the device has none (a Windows computer set up in French, for example), it says so on the home screen: the app would otherwise speak English with a French voice. To add one on Windows: Settings, Time and language, Speech, Add voices, English. Chrome brings its own English voices. Before it writes anything down, it reads it back and waits for "yes" or "no". It also reminds you aloud of each event 30 minutes before, 5 minutes before, and when it starts, as long as the app is open.
 
 To add an event, the app needs a day, a time, a place and who it is with, and asks for whatever is missing. Answer "alone" or "nowhere" when there is nobody or no place.
 

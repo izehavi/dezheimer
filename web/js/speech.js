@@ -4,11 +4,27 @@ const Speech = (() => {
   const supported = 'speechSynthesis' in window;
   let voice = null;
 
+  // Voices that are jokes or effects, found on Apple devices among the English ones.
+  const NOT_A_VOICE = /albert|bad news|bahh|bells|boing|bubbles|cellos|good news|jester|organ|superstar|trinoids|whisper|wobble|zarvox|deranged|hysterical|pipe organ|fred|junior|ralph|kathy|eddy|flo|grandma|grandpa|reed|rocko|sandy|shelley/i;
+  // Voices known to be clear, best first.
+  const GOOD = [/natural/i, /samantha|daniel|karen|serena|ava|allison|susan/i, /google (uk|us) english/i, /zira|hazel|aria|jenny|sonia|libby/i];
+
+  // An English voice, never the voice of another language: a French voice reading
+  // English is very hard to follow.
   const pickVoice = () => {
-    const english = speechSynthesis.getVoices().filter((v) => v.lang.startsWith('en'));
-    // A voice that runs on the device is preferred to one that runs online.
-    voice = english.find((v) => v.localService) || english[0] || null;
+    const english = speechSynthesis.getVoices()
+      .filter((v) => /^en([-_]|$)/i.test(v.lang) && !NOT_A_VOICE.test(v.name));
+    const rank = (v) => {
+      const known = GOOD.findIndex((names) => names.test(v.name));
+      return (known < 0 ? GOOD.length : known) * 4
+        + (/^en[-_](GB|US)/i.test(v.lang) ? 0 : 2)   // the accents most people are used to
+        + (v.localService ? 0 : 1);                   // on the device rather than online
+    };
+    voice = english.sort((a, b) => rank(a) - rank(b))[0] || null;
   };
+
+  // True when the device has voices, and none of them is English.
+  const noEnglish = () => supported && !voice && speechSynthesis.getVoices().length > 0;
 
   if (supported) {
     pickVoice();
@@ -19,9 +35,10 @@ const Speech = (() => {
   const say = (text) => new Promise((resolve) => {
     if (!supported || !text) { resolve(); return; }
     speechSynthesis.cancel();
+    if (!voice) pickVoice();   // the list of voices often comes after the page
     const utterance = new SpeechSynthesisUtterance(text);
     if (voice) utterance.voice = voice;
-    utterance.lang = voice ? voice.lang : 'en-GB';
+    utterance.lang = voice ? voice.lang : 'en-US';
     utterance.rate = 0.9; // a little slower than normal, easier to follow
     // Some browsers never signal the end; do not wait for ever.
     const giveUp = setTimeout(resolve, 3000 + text.length * 90);
@@ -52,5 +69,5 @@ const Speech = (() => {
     return `${hour}${m ? ` ${String(m).padStart(2, '0')}` : ''} ${h < 12 ? 'in the morning' : h < 18 ? 'in the afternoon' : 'in the evening'}`;
   };
 
-  return { say, stop, time, supported };
+  return { say, stop, time, supported, noEnglish };
 })();
