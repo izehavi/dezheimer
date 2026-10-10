@@ -161,9 +161,35 @@ const SampleData = (() => {
   // when the user is signed in (account.js). Each added item has `added: true`.
   const lists = { events, memos, notes, diary, people, connections };
   const dateField = { events: 'start', memos: 'date', notes: 'date', diary: 'date' };
-  const storeKey = (kind) => `dezheimer.added${kind[0].toUpperCase()}${kind.slice(1)}`;
-  const HIDDEN_KEY = 'dezheimer.hiddenEvents';
-  const EDITS_KEY = 'dezheimer.personEdits';
+
+  // Whose data this is. Without a profile, the app shows the example user, Helen.
+  // With one, { name }, it starts empty and holds only what this person adds. The two
+  // are stored apart, so that going back to the example loses nothing.
+  const PROFILE_KEY = 'dezheimer.profile';
+  const EXAMPLE = 'dezheimer.';
+  const OWN = 'dezheimer.own.';
+  let profile = null;
+  try { profile = JSON.parse(localStorage.getItem(PROFILE_KEY) || 'null'); } catch { /* the example */ }
+  if (profile && profile.name) {
+    user.name = profile.name;
+    for (const list of Object.values(lists)) list.length = 0;
+  } else {
+    profile = null;
+  }
+  const prefix = profile ? OWN : EXAMPLE;
+  const storeKey = (kind, at = prefix) => `${at}added${kind[0].toUpperCase()}${kind.slice(1)}`;
+  const HIDDEN_KEY = `${prefix}hiddenEvents`;
+  const EDITS_KEY = `${prefix}personEdits`;
+
+  // Choose whose data the app shows: a name, or nothing for the example. The page must
+  // be loaded again afterwards. Returns false when the browser could not keep the choice.
+  const setProfile = (name) => {
+    try {
+      if (name) localStorage.setItem(PROFILE_KEY, JSON.stringify({ name }));
+      else localStorage.removeItem(PROFILE_KEY);
+      return true;
+    } catch { return false; }
+  };
 
   // The example data, as it is before anything is added or cancelled.
   const base = Object.fromEntries(Object.entries(lists).map(([kind, list]) => [kind, [...list]]));
@@ -182,6 +208,7 @@ const SampleData = (() => {
     ...Object.fromEntries(Object.keys(lists).map((kind) => [kind, lists[kind].filter((x) => x.added)])),
     hidden,
     edits,
+    profile,
   });
 
   // Replace everything the user added with `doc`. The lists are changed in place,
@@ -273,8 +300,24 @@ const SampleData = (() => {
   return {
     today, user, people, memos, events, diary, notes, connections, ring,
     add, remove, cancelEvent, changeEvent, updatePerson, exportAdded,
+    profile: () => profile, setProfile,
     // Used by the backup: load what another device saved.
-    importAdded: (doc) => { importAdded(doc); saveLocal(); },
+    importAdded: (doc) => {
+      const theirs = doc.profile === undefined ? profile : (doc.profile && doc.profile.name ? { name: doc.profile.name } : null);
+      if ((theirs && theirs.name) !== (profile && profile.name)) {
+        // Saved by a device that shows other data (the example, or someone's own):
+        // this device does the same, and starts again with it.
+        try {
+          const at = theirs ? OWN : EXAMPLE;
+          for (const kind of Object.keys(lists)) localStorage.setItem(storeKey(kind, at), JSON.stringify(doc[kind] || []));
+          localStorage.setItem(`${at}hiddenEvents`, JSON.stringify(Array.isArray(doc.hidden) ? doc.hidden : []));
+          localStorage.setItem(`${at}personEdits`, JSON.stringify(doc.edits || {}));
+          if (setProfile(theirs && theirs.name)) { location.reload(); return; }
+        } catch { /* storage unavailable: shown until the page is closed */ }
+      }
+      importAdded(doc);
+      saveLocal();
+    },
     onChange: (listener) => { onChange = listener; },
   };
 })();

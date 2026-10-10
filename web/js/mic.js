@@ -202,6 +202,9 @@ const Mic = (() => {
 
   const transcribe = (recorded, h, onText, keep = false) => {
     const { audio, rate } = to16k(recorded, context.sampleRate);
+    // Sent as 16-bit numbers: half the size, which matters on a phone network.
+    const sound = new Int16Array(audio.length);
+    for (let i = 0; i < audio.length; i++) sound[i] = Math.max(-1, Math.min(1, audio[i])) * 32767;
     let sentAt;
     pending += 1;
     queue = queue
@@ -213,10 +216,11 @@ const Mic = (() => {
           headers: {
             'Content-Type': 'application/octet-stream',
             'X-Sample-Rate': String(rate),
+            'X-Sample-Format': 'int16',
             'X-Vocabulary': encodeURIComponent(vocabulary()),
             ...(keep ? { 'X-Keep': '1' } : {}),
           },
-          body: audio.buffer,
+          body: sound.buffer,
         });
       })
       .then(async (res) => {
@@ -230,7 +234,7 @@ const Mic = (() => {
       })
       .catch((err) => h.onError?.(
         err instanceof TypeError
-          ? 'The Dezheimer server stopped answering. Check that its black window is still open on the computer, and that this device is on the same Wi-Fi.'
+          ? 'The Dezheimer server stopped answering. Check that its black window is still open on the computer, and that this device can reach it.'
           : `Could not write down the last phrase: ${err.message}`))
       .finally(() => { pending -= 1; });
   };

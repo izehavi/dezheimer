@@ -19,6 +19,8 @@ What is solid and what is not:
 | Automatic memos from a whole conversation (language model) | Weak: finds about half of the news, slow, and too large for a phone. |
 | Accounts and backup | First version works with email and password. Reachable from this computer only until the server is put online. The backup is not encrypted yet. |
 | Place of an event on the map | New on 2026-10-08. Works in a test with a simulated position in Paris. Not tried with a real device position yet. |
+| The phone anywhere | New on 2026-10-10: `start-anywhere.bat`, through Tailscale. **Not tried yet**: Tailscale is not installed on the development computer, so only the message that says so was seen. |
+| The user's own data | New on 2026-10-10: the app can start empty, under the user's own name, instead of the example. Works in a test on the computer. |
 | iPhone | First prototype built on 2026-10-08: the iPhone opens the app from the computer over the home Wi-Fi. **Used by the tester on an iPhone 13:** requests by voice and the position worked (the feedback of round 2 partly comes from it). The home-screen icon and the reminders on the iPhone are not confirmed. |
 
 | Phase | Status |
@@ -37,6 +39,7 @@ The project is in a practice phase. The project owner uses the assistant by voic
 - Every exchange is saved as one line in `%USERPROFILE%\.dezheimer\feedback\feedback.jsonl`: what was heard, what the app answered, what the server understood at each step (intent, score, details), the verdict (`yes`, `no`, or `unanswered`), and the comment.
 - The file is outside the project since 2026-10-10, because it holds what the tester said and the project folder is synced to OneDrive. The 33 exchanges of rounds 1 and 2 were moved there.
 - **To measure the speech model:** the switch "Keep the sound of my voice" (off by default) keeps each request said to the assistant as a sound file in `%USERPROFILE%\.dezheimer\recordings`, with what was heard and the vocabulary given. The exchange in the feedback file names the recording. `measure.bat` then asks what was really said and compares the model sizes.
+- Since 2026-10-10 an exchange is sent as soon as it ends, as `unanswered`, and again when the verdict is given; the file keeps one line per exchange (they have an `id`). What cannot be sent waits on the device, up to 300 exchanges, and goes when the server is reachable again. Each line also says whether it came from a phone or a computer, and from the example or the user's own data.
 - **To improve the app:** read that file, group the `no` and `unanswered` lines by cause (misheard words, wrong intent, wrong detail, wrong answer), then fix each cause with an example sentence in [server/intents.py](server/intents.py), a rule in [server/assistant.py](server/assistant.py) or [server/commands.py](server/commands.py), and a test. The `yes` lines become tests too, so that what works keeps working.
 - The mode is on by default. It can be switched off under "What can I say?" on the home screen.
 
@@ -120,6 +123,7 @@ Double-click [start.bat](start.bat). The app opens at http://localhost:8765. The
 | File | Role |
 | --- | --- |
 | [server/phone.py](server/phone.py) | `start-phone.bat`: the same app for the computer (port 8765) and for a phone on the same Wi-Fi (secure, port 8443). Makes the certificate, serves a plain page (port 8767) that explains how to trust it, and asks each phone for a 6-digit code once. The certificate and the code are kept in `%USERPROFILE%\.dezheimer\phone`. |
+| [server/anywhere.py](server/anywhere.py) | `start-anywhere.bat`: the app for the computer and for the user's phone anywhere. Asks Tailscale for the secure address of this computer on the user's private network, keeps Windows awake, and closes the address when the window is closed. |
 | [server/app.py](server/app.py) | FastAPI server: serves the app and the four services below. |
 | [server/transcriber.py](server/transcriber.py) | `POST /api/transcribe`: audio to text with `openai/whisper-small.en`. The app sends the user's names and places with each phrase, and the model then prefers those spellings. The size is set by the `DEZHEIMER_ASR_MODEL` variable. |
 | [server/intents.py](server/intents.py) | Finds what a sentence asks for, by meaning, with `sentence-transformers/all-MiniLM-L6-v2` and its list of example sentences. |
@@ -129,7 +133,7 @@ Double-click [start.bat](start.bat). The app opens at http://localhost:8765. The
 | [server/commands.py](server/commands.py) | Reads an event from a sentence: day, time, people, place, activity. Also `POST /api/command`, used by the Listen screen. |
 | [server/understanding.py](server/understanding.py) | `POST /api/understand`: summary and memos from a whole conversation with `Qwen/Qwen2.5-3B-Instruct`, checked by code. |
 
-Tests are in [tests/](tests/): 75 tests, run with `python -m unittest discover tests`.
+Tests are in [tests/](tests/): 78 tests, run with `python -m unittest discover tests`.
 
 ### How a voice request works
 
@@ -158,6 +162,10 @@ To make a request more robust, add example sentences to `EXAMPLES` in [server/in
 
 ## What was tested
 
+- **A request by voice with a simulated microphone, 2026-10-10,** in a browser on the computer, a recorded sentence played into the app in place of the microphone: the phrase was sent as 16-bit sound, only the finished phrase asked to be kept, the request was answered, and the exchange in the feedback file names the recording.
+- **Feedback never lost, 2026-10-10:** an exchange was in the file as `unanswered` before any verdict; a "no" with a comment replaced it, on the same line count; with the server made unreachable, an exchange and its "yes" waited on the device and arrived once the server was back.
+- **The user's own data, 2026-10-10,** on the computer: after "Start with my own data" the app was empty and greeted the chosen name; a person added by a typed request was kept; every screen opened; going back to the example showed Helen again and the own data was still stored.
+- **Not tested, 2026-10-10:** `start-anywhere.bat` with Tailscale, and all of the above on the iPhone.
 - **Keeping and measuring, 2026-10-10,** with three sentences read by a synthetic voice and sent to the server as the app does: a phrase is kept only when asked; labelling, skipping and deleting work; the four models were compared. On these two labelled phrases the numbers mean nothing, they only show that the tool runs. In the app, the switch appears, is off at first, and stays on once set. Not tested: a phrase said into a real microphone with the switch on.
 - **Speech model, 2026-10-08:** ten sentences read by two synthetic voices, three model sizes, with and without the vocabulary. With the vocabulary, every size wrote "Elinor", "Lothan" and "Carmel Coffee" correctly where it had written "Eleanor", "Lathan" or "caramel coffee" without it. On the clear voice all three sizes were otherwise right. On a French synthetic voice reading English, all three made many mistakes and "small" was only slightly better; this voice is a much harder case than a real speaker, so it does not settle the choice of size. A real comparison needs recordings of the tester.
 - **Feedback round 2, replayed typed** in a headless browser: the unknown person, the name asked once, "he is my grandfather" after adding someone, the close place name not chosen, the greeting and "mhm" all gave what the tester wanted.
@@ -189,7 +197,9 @@ To make a request more robust, add example sentences to `EXAMPLES` in [server/in
 - The map search needs the internet. It sends the name of the place and a position rounded to about one kilometre to an open map service (photon.komoot.io, built on OpenStreetMap), which is a free service with no guarantee. A place is only found if its name is written much as the map has it: a name misheard by the speech model is not found, and the place is then kept as said.
 - A computer often gives a poor position, or none. A phone gives a good one.
 - The choice between several places is made by tapping, not yet by voice.
-- The iPhone prototype needs the computer switched on, on the same Wi-Fi. It does not work outside the home. Reminders do not come when the iPhone is locked or the app is closed.
+- On a phone, the computer must be switched on: on the same Wi-Fi with `start-phone.bat`, or anywhere with `start-anywhere.bat` and Tailscale switched on on the phone. If the computer sleeps or loses the internet, the app on the phone stops answering. Reminders do not come when the iPhone is locked or the app is closed.
+- The example and the user's own data are two separate sets on a device; what was added on top of the example is not carried into the user's own data. The account backup holds one of them: the one shown when it was last saved.
+- On a phone network each phrase is sent several times while it is spoken (for the words shown live), about 30 kB per second of speech each time.
 - If the address of the computer on the Wi-Fi changes, the address to open on the iPhone changes too (the window of the computer shows it). The certificate on the iPhone stays good.
 - Reminders only work while the app is open in the browser, and the browser may keep the voice silent until the user has touched the page once.
 - The connections map draws everyone on one circle: it gets crowded above about 12 people.
@@ -210,7 +220,7 @@ To make a request more robust, add example sentences to `EXAMPLES` in [server/in
 
 ## Next steps
 
-1. **Third round of practice**, mostly on the iPhone.
+1. **Install Tailscale** on the computer and the phone, try `start-anywhere.bat`, then a **third round of practice** over several days on the iPhone, with the user's own data and "Keep the sound of my voice" switched on.
 2. **Decide on fine-tuning the speech model.** The plan: first measure. The tool exists since 2026-10-10: switch on "Keep the sound of my voice", practise, then run `measure.bat`. About 100 phrases are enough to compare model sizes fairly, and one to two hours are needed to fine-tune. Fine-tuning is most useful to make a phone-sized model (tiny or base) as good on this voice as the larger one.
 3. **Try the prototype on the iPhone** (`start-phone.bat`) and report what does not work: the microphone, the voice and the position can behave differently on an iPhone.
 4. Add the missing voice requests: correct or remove a memo, a permanent fact about a person; choose a place on the map by voice.
@@ -234,6 +244,8 @@ To make a request more robust, add example sentences to `EXAMPLES` in [server/in
 | 2026-10-08 | The first iPhone prototype is the web app opened from the computer over the home Wi-Fi, with its own certificate and a code. | An iPhone app cannot be built on Windows, and this needs no rewriting. Nothing goes through the internet, unlike a tunnel service. The code is needed because anyone on the same Wi-Fi can reach the address. |
 | 2026-10-08 | The project is saved on GitHub (github.com/izehavi/dezheimer) each time something works. | Asked by the project owner. |
 | 2026-10-08 | New work that needs no model is written in the app, not in the server. | The app must end up on a phone, which cannot run the Python server. |
+| 2026-10-10 | Away from home, the phone reaches the computer through Tailscale. | The project owner wants to practise for several days everywhere. The models cannot run on the phone yet. A private network between the user's own devices keeps the rule of 2026-10-08: nothing is public and nobody else can read the traffic, unlike a public tunnel. A hosted server would put the voice and the data on someone else's machine. |
+| 2026-10-10 | The app can hold the user's own data instead of the example, stored apart from it. | Practising on top of Helen's family gave false problems ("Do you mean Sarah?") and reminders addressed to Helen. |
 | 2026-10-10 | The sound of a request is kept only when the user switches it on, only for the assistant, and outside the project folder. | It is needed to measure the speech model on a real voice. The Listen tab hears other people, who have not agreed. The project folder is synced to OneDrive. |
 | 2026-10-07 | Everything the app is about to write down must be confirmed first. | A wrong memory is worse than no memory (guideline, principle 2). |
 | 2026-10-07 | Voice requests are understood with a small sentence model and rules, not with a language model. | It is fast (about 50 ms), small enough for a phone, and predictable. The project owner asked for requests to work by meaning, on a phone, locally. |
@@ -258,5 +270,6 @@ To make a request more robust, add example sentences to `EXAMPLES` in [server/in
 - **2026-10-08** — The place of an event is looked for on the map around the user. Guideline: the path to a phone in three steps.
 - **2026-10-08** — iPhone prototype: `start-phone.bat`, secure address with the computer's own certificate, code, home-screen icon, microphone and voice adapted to the iPhone. Project saved on GitHub.
 - **2026-10-08** — Second round of feedback, partly from the iPhone: 12 causes fixed, 9 new tests.
+- **2026-10-10** — For several days of practice everywhere: `start-anywhere.bat` (Tailscale), the user's own data instead of the example, feedback sent at once and never lost, sound sent at half the size.
 - **2026-10-10** — Measuring the speech model: opt-in keeping of the sound of each request, `measure.bat` to label and compare models, feedback moved out of the OneDrive folder.
 - **2026-10-07** — Improvement mode: a verdict after each request, saved for improving the app. An event now needs a place and a person, and the app asks for them.

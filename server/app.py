@@ -3,6 +3,7 @@
 import datetime as dt
 import json
 import os
+import threading
 from contextlib import asynccontextmanager
 from pathlib import Path
 from urllib.parse import unquote
@@ -58,7 +59,10 @@ def health():
 
 @app.post("/api/transcribe")
 async def transcribe(request: Request):
-    """Body: mono audio as raw little-endian float32 samples. Header X-Sample-Rate gives the rate."""
+    """Body: mono audio as raw little-endian samples. Header X-Sample-Rate gives the rate.
+
+    The samples are float32, or 16-bit integers when the header X-Sample-Format is "int16".
+    """
     try:
         sample_rate = int(request.headers.get("x-sample-rate", SAMPLE_RATE))
     except ValueError:
@@ -69,10 +73,14 @@ async def transcribe(request: Request):
     body = await request.body()
     if len(body) > MAX_BODY_BYTES:
         raise HTTPException(413, f"Audio is longer than {MAX_SECONDS} seconds.")
-    if len(body) % 4:
-        raise HTTPException(400, "Body must be float32 samples.")
-
-    audio = np.frombuffer(body, dtype="<f4")
+    if request.headers.get("x-sample-format") == "int16":
+        if len(body) % 2:
+            raise HTTPException(400, "Body must be 16-bit samples.")
+        audio = np.frombuffer(body, dtype="<i2").astype(np.float32) / 32768
+    else:
+        if len(body) % 4:
+            raise HTTPException(400, "Body must be float32 samples.")
+        audio = np.frombuffer(body, dtype="<f4")
     if audio.size == 0:
         return {"text": ""}
 
@@ -149,20 +157,42 @@ def understand_transcript(request: UnderstandRequest):
 FEEDBACK_FILE = Path(os.environ.get("DEZHEIMER_FEEDBACK_FILE", accounts.DATA_DIR / "feedback" / "feedback.jsonl"))
 
 
+_feedback_lock = threading.Lock()
+
+
 class Feedback(BaseModel):
     record: dict  # the exchange, the verdict ("yes", "no" or "unanswered") and the user's comment
 
 
 @app.post("/api/feedback")
 def save_feedback(feedback: Feedback):
-    """Keep one exchange with the assistant and the user's verdict, one JSON object per line."""
+    """Keep one exchange with the assistant and the user's verdict, one JSON object per line.
+
+    The app sends an exchange when it ends, and again when the user gives a verdict, or
+    when the first time may not have arrived. A record with an "id" already kept replaces
+    the earlier one, so that the file has one line per exchange.
+    """
     line = json.dumps({"saved": dt.datetime.now().isoformat(timespec="seconds"), **feedback.record})
     if len(line) > 100_000:
         raise HTTPException(413, "The record is too large.")
-    FEEDBACK_FILE.parent.mkdir(parents=True, exist_ok=True)
-    with FEEDBACK_FILE.open("a", encoding="utf-8") as file:
-        file.write(line + "\n")
+    record_id = feedback.record.get("id")
+    with _feedback_lock:
+        FEEDBACK_FILE.parent.mkdir(parents=True, exist_ok=True)
+        lines = FEEDBACK_FILE.read_text(encoding="utf-8").splitlines() if FEEDBACK_FILE.exists() else []
+        if record_id is not None:
+            lines = [kept for kept in lines if _record_id(kept) != record_id]
+        # Written beside, then put in place: the file is never left half written.
+        beside = FEEDBACK_FILE.with_suffix(".tmp")
+        beside.write_text("".join(kept + "\n" for kept in [*lines, line]), encoding="utf-8")
+        os.replace(beside, FEEDBACK_FILE)
     return {}
+
+
+def _record_id(line: str):
+    try:
+        return json.loads(line).get("id")
+    except (ValueError, AttributeError):
+        return None
 
 
 # ---- Accounts: sign in, and a backup of what the user added ----

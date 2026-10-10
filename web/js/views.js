@@ -95,7 +95,7 @@ const Views = (() => {
         </a>
       </section>` : ''}
 
-      <p class="page-action account-link"><a href="#/account">Account and backup</a></p>`;
+      <p class="page-action account-link"><a href="#/account">Account, backup and my own data</a></p>`;
   };
 
   // ---- Agenda ----

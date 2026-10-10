@@ -46,13 +46,36 @@ The iPhone is the screen, the microphone and the loudspeaker; the models still r
 
 The certificate is made by your computer and only lets the iPhone trust that computer. The code is there because anyone on the same Wi-Fi can reach the address.
 
+### Use it on your phone anywhere
+
+The models still run on the computer, which must stay switched on, plugged in and connected to the internet. The phone reaches it through [Tailscale](https://tailscale.com), a private network between your own devices: the traffic is encrypted from the phone to the computer, and only devices signed in to your Tailscale account can open the address. Nothing is made public.
+
+Once:
+
+1. On the computer, install Tailscale from https://tailscale.com/download and sign in (a free personal account is enough).
+2. On the phone, install the Tailscale app, sign in with the same account, and switch it on.
+
+Then:
+
+1. On the computer, close the Dezheimer window if one is open, and double-click `start-anywhere.bat`. The first time, Tailscale may give a link to allow secure addresses (HTTPS) for your devices: open it, allow, and start again.
+2. The window shows an address that starts with `https://`. Open it in Safari on the phone and allow the microphone and the position. There is no certificate to install and no code.
+3. In Safari, tap Share, then "Add to Home Screen".
+
+While the window is open, Windows does not go to sleep by itself. Closing the lid of a laptop still puts it to sleep, unless you change that in the Windows power settings.
+
+What you add is kept in the browser of the phone. To also keep it on the computer, open **Account, backup and my own data** and create an account.
+
+### Use it for yourself
+
+The app opens on an example: Helen, her family and her week. To use it with your own life, open **Account, backup and my own data** at the bottom of the home screen, type your first name and press **Start with my own data**. The app is then empty and holds only what you add; it calls you by your name. The example stays available from the same screen, and going back to it does not delete your data.
+
 ### Places on the map
 
 When you add an event, the app looks for its place on the map around you, and reads back what it found with the address and the distance. If several places have the same name, tap the right one, or "None of these". The first time, the browser asks for permission to use your position; if it cannot give it, the app asks in which town you are. This search needs the internet: the name of the place and a rough position are sent to an open map service.
 
 ### Improvement mode
 
-After each request, the app asks "Did I do what you wanted?". Press **Yes, it did what I wanted**, or **No** and write what you wanted. Each answer is saved with the whole exchange in `%USERPROFILE%\.dezheimer\feedback\feedback.jsonl`, outside the project folder, and is used to improve the app. The mode can be switched off under "What can I say?".
+After each request, the app asks "Did I do what you wanted?". Press **Yes, it did what I wanted**, or **No** and write what you wanted. Every exchange is saved as soon as it ends, with your answer when you give one, in `%USERPROFILE%\.dezheimer\feedback\feedback.jsonl`, outside the project folder, and is used to improve the app. If the phone cannot reach the computer at that moment, the exchange waits on the phone and is sent when it can. The mode can be switched off under "What can I say?".
 
 ### Measure how well the app hears you
 

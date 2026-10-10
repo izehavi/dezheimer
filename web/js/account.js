@@ -148,6 +148,36 @@ const Account = (() => {
           <button class="button" type="submit" data-do="signup">Create my account</button>
         </div>
       </form>`;
+    box.insertAdjacentHTML('beforeend', profileCard());
+  };
+
+  // Whose data the app shows: the example user, or the person who uses this device.
+  const profileCard = () => {
+    const own = SampleData.profile();
+    return own ? `
+      <section class="profile">
+        <h2>Whose data</h2>
+        <div class="card">
+          <p>This app holds the data of <strong>${esc(own.name)}</strong>: only what you add.</p>
+          <p class="source">Going back to the example keeps your data on this device. It comes back when you return.</p>
+        </div>
+        <p class="account-actions page-action">
+          <button class="button" type="button" data-do="example">See the example (Helen)</button>
+        </p>
+      </section>` : `
+      <section class="profile">
+        <h2>Whose data</h2>
+        <div class="card">
+          <p>The app shows an example: Helen, her family and her week.</p>
+          <p class="source">To use it for yourself, start with your own data. The app is then empty, and holds only what you add.</p>
+        </div>
+        <div class="account-form">
+          <label>Your first name <input type="text" id="profile-name" autocomplete="given-name" maxlength="40"></label>
+          <div class="account-actions">
+            <button class="button primary" type="button" data-do="own">Start with my own data</button>
+          </div>
+        </div>
+      </section>`;
   };
 
   const mount = () => {
@@ -156,6 +186,14 @@ const Account = (() => {
       const button = e.target.closest('[data-do]');
       if (!button) return;
       const action = button.dataset.do;
+      if (action === 'own' || action === 'example') {
+        const field = document.getElementById('profile-name');
+        const name = action === 'own' ? field.value.trim() : null;
+        if (action === 'own' && !name) { field.focus(); return; }
+        if (SampleData.setProfile(name)) { location.hash = '#/'; location.reload(); }
+        else { note('This browser could not keep the choice.', true); paint(); }
+        return;
+      }
       if (action === 'save') { await save(); note('Saved.'); paint(); }
       if (action === 'signout') {
         await call('POST', 'signout').catch(() => {});

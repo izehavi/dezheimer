@@ -574,6 +574,7 @@ button.button:disabled { opacity: 0.45; cursor: not-allowed; }
 /* ---- Account ---- */
 
 .account-link { text-align: center; }
+.profile { margin-top: 36px; }
 .account-link a { color: var(--muted); font-weight: 600; }
 .account-form { display: grid; gap: 14px; max-width: 480px; margin-top: 20px; }
 .account-form label { display: grid; gap: 6px; font-weight: 600; }

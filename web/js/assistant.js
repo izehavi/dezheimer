@@ -68,17 +68,53 @@ const Assistant = (() => {
     if (!trace || confirm || pending || nameCheck || townAsk) return;
     review = improve ? { ...trace, state: 'ask' } : null;
     trace = null;
+    sendReview('unanswered');
+  };
+
+  // Every exchange is sent as soon as it is over, as "unanswered", and sent again with
+  // the verdict when the user gives one: the server keeps the last one. What could not
+  // be sent (no network, the computer switched off) waits on this device and is sent later.
+  const QUEUE_KEY = 'dezheimer.feedbackQueue';
+  const MAX_WAITING = 300;
+  let waiting = [];
+  try { waiting = JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]'); } catch { /* nothing waiting */ }
+  let sending = false;
+
+  const keepWaiting = () => {
+    try { localStorage.setItem(QUEUE_KEY, JSON.stringify(waiting)); } catch { /* kept until the page is closed */ }
+  };
+
+  const flush = async () => {
+    if (sending) return;
+    sending = true;
+    try {
+      while (waiting.length) {
+        const record = waiting[0];
+        const res = await fetch('/api/feedback', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ record }),
+        });
+        // Refused for good (too large, not readable): it is dropped, so that the others can go.
+        if (!res.ok && res.status !== 413 && res.status !== 422) break;
+        if (waiting[0] === record) waiting.shift();
+        keepWaiting();
+      }
+    } catch { /* no network: tried again later */ }
+    sending = false;
+  };
+
+  const post = (record) => {
+    waiting = [...waiting.filter((r) => r.id !== record.id), record].slice(-MAX_WAITING);
+    keepWaiting();
+    flush();
   };
 
   const sendReview = (verdict, comment = '') => {
     if (!review) return;
     const { state, ...record } = review;
-    review = verdict === 'unanswered' ? null : { ...review, state: 'thanks' };
-    fetch('/api/feedback', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ record: { ...record, verdict, comment } }),
-    }).catch(() => {});
+    if (verdict !== 'unanswered') review = { ...review, state: 'thanks' };
+    post({ ...record, verdict, comment });
   };
 
   const startListening = async () => {
@@ -148,10 +184,15 @@ const Assistant = (() => {
     if (!text) { phase = 'idle'; render(); return; }
     log.push({ who: 'you', text });
     if (!trace) {
-      // A new request. A verdict that was not given on the last one is recorded as such.
-      if (review && review.state !== 'thanks') sendReview('unanswered');
+      // A new request. The last one stays "unanswered" if no verdict was given.
       review = null;
-      trace = { startedAt: new Date().toISOString(), turns: [], calls: [] };
+      trace = {
+        id: `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
+        startedAt: new Date().toISOString(),
+        device: /iPhone|iPad|iPod|Android/.test(navigator.userAgent) ? 'phone' : 'computer',
+        user: SampleData.profile() ? 'own data' : 'example',
+        turns: [], calls: [],
+      };
       namesSettled = false;
     }
     trace.turns.push({ who: 'you', text, source, ...(audio ? { audio } : {}) });
@@ -870,6 +911,11 @@ const Assistant = (() => {
     }, true);
     render();
   };
+
+  // Feedback that could not be sent goes when the app opens and when the network is back.
+  flush();
+  window.addEventListener('online', flush);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) flush(); });
 
   // True when nothing is going on, so the screen can be refreshed safely.
   const idle = () => phase === 'idle' && !confirm && !pending && !nameCheck && !townAsk && !(review && review.state !== 'thanks')
