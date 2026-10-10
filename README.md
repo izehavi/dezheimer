@@ -37,14 +37,25 @@ If a name is not heard exactly, the app asks: "Do you mean Rose?" Before you say
 
 ### The simple things of the day
 
-The home screen has a block **To do today**: the pills, the meals, and whatever else comes back every day. Touch **Done** when a thing is done, or say it: "I took my pills." You can then ask at any time: "Did I take my pills?", "Have I had dinner?", "What do I still have to do?" The app answers with the time it was done. A thing that has a time and is not done is said aloud at that time, and once more half an hour later, while the app is open.
+**To do today.** The home screen has a block with the pills, the meals, and whatever else comes back every day or on some days of the week. Touch **Done** when a thing is done, or say it: "I took my pills." You can then ask at any time: "Did I take my pills?", "Have I had dinner?", "What do I still have to do?" The app answers with the time it was done. A thing that has a time and is not done is said aloud at that time, and once more half an hour later, while the app is open. To add one by voice: "Every day at 10, water the plants." or "Every Tuesday at 8, take out the bins."
 
-Open **My day** (from that block) for two more lists:
+**Step by step.** For something with steps, such as a recipe, the app keeps your place. Say "I want to make an omelette", or open **Step by step** and choose. The app says what you need and the first step. Then:
+
+- "Done." or the button **Done, next step**: the next step is read aloud.
+- "What is next?" and "Where am I?": the step to do now, and what is already done.
+- "Did I put the salt?": yes, not yet, or at which step it comes.
+- "I added the salt.": noted, and the next step is read. If steps before it are not done, the app says which.
+- "Stop the recipe."
+
+The place is kept if the app is closed, for six hours. Two examples are there, a cup of tea and an omelette; add your own under **Change my lists**: a name, what is needed, and the steps, one on each line.
+
+**My day** (opened from the block on the home screen) also has:
 
 - **Before I leave home**: keys, phone, card. Touch each one when you have it; the app says when you have everything. You can also say "I am leaving."
 - **Good to know**: things that do not change, such as the code of the building or where the keys are. Add them there, or say "Remember that the keys are in the blue bowl", then ask "Where are my keys?"
+- **The last seven days**: what was done each day, for you and for whoever helps you.
 
-Under **Change my lists** you add and remove things. With your own data the lists start empty; **Start with the usual ones** puts the pills, the three meals, and keys, phone and card. Do not write a secret code there yet: the backup is not encrypted.
+Under **Change my lists** you add and remove things. With your own data the lists start empty; **Start with the usual ones** puts the pills, the three meals, keys, phone and card, and the two examples of steps. Do not write a secret code there yet: the backup is not encrypted.
 
 ### Use it on an iPhone
 

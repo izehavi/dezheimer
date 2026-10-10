@@ -166,16 +166,43 @@ const SampleData = (() => {
     { id: 'lunch', list: 'day', text: 'Lunch', time: '12:30' },
     { id: 'dinner', list: 'day', text: 'Dinner', time: '19:00' },
     { id: 'pills-evening', list: 'day', text: 'Take the evening pills', time: '21:00' },
+    // `days`: only on these days of the week (0 is Sunday). Without it, every day.
+    { id: 'bins', list: 'day', text: 'Take out the bins', time: '18:00', days: [2] },
     { id: 'keys', list: 'leaving', text: 'Keys', time: '' },
     { id: 'phone', list: 'leaving', text: 'Phone', time: '' },
     { id: 'card', list: 'leaving', text: 'Card', time: '' },
   ];
   // What was done, and when: { taskId, at }. A thing of the day is done when it has one today.
   const ticks = [];
+  // Things done step by step, such as a recipe: { id, name, things, steps }.
+  // `things` is what is needed; `steps` are done in order.
+  const guides = [
+    {
+      id: 'tea', name: 'A cup of tea', things: ['A cup', 'A tea bag', 'Water'],
+      steps: [
+        'Fill the kettle with water and switch it on.',
+        'Put the tea bag in the cup.',
+        'When the water has boiled, pour it in the cup.',
+        'Wait three minutes, then take the tea bag out.',
+        'Switch the kettle off.',
+      ],
+    },
+    {
+      id: 'omelette', name: 'An omelette', things: ['Two eggs', 'Butter', 'Salt', 'A pan', 'A bowl and a fork'],
+      steps: [
+        'Break the two eggs in the bowl.',
+        'Add a pinch of salt and beat with the fork.',
+        'Melt a little butter in the pan, on a medium heat.',
+        'Pour the eggs in the pan.',
+        'When the eggs are set, fold the omelette and put it on a plate.',
+        'Switch the heat off.',
+      ],
+    },
+  ];
 
   // What the user adds. It is kept in this browser, and in the backup of the account
   // when the user is signed in (account.js). Each added item has `added: true`.
-  const lists = { events, memos, notes, diary, people, connections, tasks, ticks };
+  const lists = { events, memos, notes, diary, people, connections, tasks, ticks, guides };
   const dateField = { events: 'start', memos: 'date', notes: 'date', diary: 'date', ticks: 'at' };
 
   // Whose data this is. Without a profile, the app shows the example user, Helen.
@@ -314,7 +341,7 @@ const SampleData = (() => {
   };
 
   return {
-    today, user, people, memos, events, diary, notes, connections, ring, tasks, ticks,
+    today, user, people, memos, events, diary, notes, connections, ring, tasks, ticks, guides,
     add, remove, cancelEvent, changeEvent, updatePerson, exportAdded,
     profile: () => profile, setProfile,
     // Used by the backup: load what another device saved.

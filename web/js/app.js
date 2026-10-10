@@ -5,7 +5,7 @@
 //   #/people/connections  map of who knows whom
 //   #/diary[/DAY]       diary
 //   #/listen            record a conversation
-//   #/day               what to do today, before leaving home, good to know
+//   #/day[/steps]       what to do today, before leaving home, good to know; something step by step
 //   #/account           sign in, backup
 //   #/read              read a long text aloud, to teach the app the user's voice
 (() => {
@@ -33,7 +33,7 @@
       html = Account.view();
     } else if (tab === 'day') {
       active = 'day';
-      html = Day.view({ now });
+      html = Day.view({ now, arg });
     } else if (tab === 'read') {
       active = 'read';
       html = Reading.view();

@@ -219,19 +219,17 @@ const Assistant = (() => {
       return;
     }
 
-    // The simple things of the day ("Did I take my pills?", "I had lunch") are answered
-    // here, in the app (day.js).
+    // The simple things of the day ("Did I take my pills?", "I had lunch", "What is next?"
+    // in a recipe) are answered here, in the app (day.js).
     const daily = !pending && !nameCheck && Day.understand(text, new Date());
     if (daily) {
-      trace.calls.push({ day: daily.task ? { done: daily.task.text } : { answered: daily.say } });
-      if (!daily.task) { await say(daily.say, { link: daily.link, linkText: daily.linkText }); return; }
-      await propose({
-        say: daily.say,
-        question: 'Shall I note that it is done?',
-        apply: () => { Day.tick(daily.task.id); },
-        done: 'Done. It is noted.',
-        link: daily.link, linkText: daily.linkText,
-      });
+      // A step of something being done is noted at once; what is written down waits for a "yes".
+      if (daily.act) { daily.act(); onChange(); }
+      const answer = daily.sayAfter ? daily.sayAfter() : daily.say;
+      trace.calls.push({ day: daily.ask ? { toConfirm: answer } : { answered: answer } });
+      const link = { link: daily.link, linkText: daily.linkText };
+      if (!daily.ask) { await say(answer, link); return; }
+      await propose({ say: answer, ...daily.ask, ...link });
       return;
     }
 
