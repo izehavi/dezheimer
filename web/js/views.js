@@ -76,6 +76,8 @@ const Views = (() => {
 
       ${Assistant.view()}
 
+      ${Day.homeBlock(now)}
+
       <section>
         <h2>Coming next</h2>
         ${next ? eventCard(next, now, { highlight: true }) : empty('Nothing else is planned today.')}

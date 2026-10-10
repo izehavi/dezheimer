@@ -157,10 +157,26 @@ const SampleData = (() => {
   // Things to remember that are not about a known person: { date, subject, text, quote }.
   const notes = [];
 
+  // The simple things of every day (day.js): { id, list, text, time }.
+  // list 'day': to do every day, at `time` ('HH:MM') or at any time ('').
+  // list 'leaving': to have before leaving home.
+  const tasks = [
+    { id: 'pills-morning', list: 'day', text: 'Take the morning pills', time: '08:00' },
+    { id: 'breakfast', list: 'day', text: 'Breakfast', time: '08:30' },
+    { id: 'lunch', list: 'day', text: 'Lunch', time: '12:30' },
+    { id: 'dinner', list: 'day', text: 'Dinner', time: '19:00' },
+    { id: 'pills-evening', list: 'day', text: 'Take the evening pills', time: '21:00' },
+    { id: 'keys', list: 'leaving', text: 'Keys', time: '' },
+    { id: 'phone', list: 'leaving', text: 'Phone', time: '' },
+    { id: 'card', list: 'leaving', text: 'Card', time: '' },
+  ];
+  // What was done, and when: { taskId, at }. A thing of the day is done when it has one today.
+  const ticks = [];
+
   // What the user adds. It is kept in this browser, and in the backup of the account
   // when the user is signed in (account.js). Each added item has `added: true`.
-  const lists = { events, memos, notes, diary, people, connections };
-  const dateField = { events: 'start', memos: 'date', notes: 'date', diary: 'date' };
+  const lists = { events, memos, notes, diary, people, connections, tasks, ticks };
+  const dateField = { events: 'start', memos: 'date', notes: 'date', diary: 'date', ticks: 'at' };
 
   // Whose data this is. Without a profile, the app shows the example user, Helen.
   // With one, { name }, it starts empty and holds only what this person adds. The two
@@ -298,7 +314,7 @@ const SampleData = (() => {
   };
 
   return {
-    today, user, people, memos, events, diary, notes, connections, ring,
+    today, user, people, memos, events, diary, notes, connections, ring, tasks, ticks,
     add, remove, cancelEvent, changeEvent, updatePerson, exportAdded,
     profile: () => profile, setProfile,
     // Used by the backup: load what another device saved.

@@ -77,7 +77,7 @@ class Transcriber:
                 audio, sampling_rate=SAMPLE_RATE, return_tensors="pt", return_attention_mask=True
             )
             options = {}
-            if not self.model_name.endswith(".en"):
+            if getattr(self._model.generation_config, "is_multilingual", not self.model_name.endswith(".en")):
                 # A model for every language must be told which one, or it guesses from the accent.
                 options.update(language="en", task="transcribe")
             vocabulary = vocabulary.strip()[:MAX_VOCABULARY_CHARS]

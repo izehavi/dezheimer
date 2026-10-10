@@ -29,7 +29,8 @@ const Reminders = (() => {
       if (said.has(key)) continue;
       return { event: e, lead, key, minutes: Math.max(0, Math.round(minutes)) };
     }
-    return null;
+    // Then the things of every day that have a time and are not done (day.js).
+    return Day.due(now, said);
   };
 
   const sentence = ({ event, lead, minutes }) => {
@@ -45,7 +46,7 @@ const Reminders = (() => {
     if (!reminder) return;
     remember(reminder.key);
 
-    const text = sentence(reminder);
+    const text = reminder.text || sentence(reminder);
     const banner = document.getElementById('reminder');
     banner.querySelector('p').textContent = text;
     banner.hidden = false;

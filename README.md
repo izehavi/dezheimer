@@ -35,6 +35,17 @@ To add an event, the app needs a day, a time, a place and who it is with, and as
 
 If a name is not heard exactly, the app asks: "Do you mean Rose?" Before you say yes, you can also correct by hand what the app is about to write: the name of a new person, the title and place of an event, the text of a memo.
 
+### The simple things of the day
+
+The home screen has a block **To do today**: the pills, the meals, and whatever else comes back every day. Touch **Done** when a thing is done, or say it: "I took my pills." You can then ask at any time: "Did I take my pills?", "Have I had dinner?", "What do I still have to do?" The app answers with the time it was done. A thing that has a time and is not done is said aloud at that time, and once more half an hour later, while the app is open.
+
+Open **My day** (from that block) for two more lists:
+
+- **Before I leave home**: keys, phone, card. Touch each one when you have it; the app says when you have everything. You can also say "I am leaving."
+- **Good to know**: things that do not change, such as the code of the building or where the keys are. Add them there, or say "Remember that the keys are in the blue bowl", then ask "Where are my keys?"
+
+Under **Change my lists** you add and remove things. With your own data the lists start empty; **Start with the usual ones** puts the pills, the three meals, and keys, phone and card. Do not write a secret code there yet: the backup is not encrypted.
+
 ### Use it on an iPhone
 
 The iPhone is the screen, the microphone and the loudspeaker; the models still run on the computer. Both must be on the same Wi-Fi, so this works at home only.

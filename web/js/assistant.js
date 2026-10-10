@@ -219,6 +219,22 @@ const Assistant = (() => {
       return;
     }
 
+    // The simple things of the day ("Did I take my pills?", "I had lunch") are answered
+    // here, in the app (day.js).
+    const daily = !pending && !nameCheck && Day.understand(text, new Date());
+    if (daily) {
+      trace.calls.push({ day: daily.task ? { done: daily.task.text } : { answered: daily.say } });
+      if (!daily.task) { await say(daily.say, { link: daily.link, linkText: daily.linkText }); return; }
+      await propose({
+        say: daily.say,
+        question: 'Shall I note that it is done?',
+        apply: () => { Day.tick(daily.task.id); },
+        done: 'Done. It is noted.',
+        link: daily.link, linkText: daily.linkText,
+      });
+      return;
+    }
+
     phase = 'thinking';
     render();
     try {

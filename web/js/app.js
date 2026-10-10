@@ -5,6 +5,7 @@
 //   #/people/connections  map of who knows whom
 //   #/diary[/DAY]       diary
 //   #/listen            record a conversation
+//   #/day               what to do today, before leaving home, good to know
 //   #/account           sign in, backup
 //   #/read              read a long text aloud, to teach the app the user's voice
 (() => {
@@ -30,6 +31,9 @@
     } else if (tab === 'account') {
       active = 'account';
       html = Account.view();
+    } else if (tab === 'day') {
+      active = 'day';
+      html = Day.view({ now });
     } else if (tab === 'read') {
       active = 'read';
       html = Reading.view();
@@ -51,7 +55,7 @@
     if (active === 'home') Assistant.mount(render);
     if (active === 'connections') { Graph.mount(); active = 'people'; }
     if (active === 'read') { Reading.mount(); active = 'home'; }
-    if (active === 'account') active = 'home';
+    if (active === 'account' || active === 'day') active = 'home';
     tabs.forEach((a) => {
       if (a.dataset.tab === active) a.setAttribute('aria-current', 'page');
       else a.removeAttribute('aria-current');
@@ -81,6 +85,7 @@
   }, 60000);
 
   render();
+  Day.start(render);
   Reminders.start();
   // The backup may bring data from another device: show it when it arrives.
   Account.start(render);
