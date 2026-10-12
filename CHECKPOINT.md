@@ -2,26 +2,28 @@
 
 Where the project stands. Updated at the end of each work session or milestone. The plan itself is in [GUIDELINE.md](GUIDELINE.md).
 
-**Last update:** 2026-10-10
+**Last update:** 2026-10-12
 
 ## Current state
 
-**The app can now be used by voice, and has accounts with a backup.** The home screen starts with one large button: the user says one thing, and the app adds, moves or cancels an event, adds a person, a connection or a memo, or answers a question aloud. It also reminds the user of events aloud. This works on example data, in a browser on a computer.
+**The app is used by voice on a computer and on an iPhone, with the models still running on the computer.** The home screen starts with one large button: the user says one thing, and the app adds, moves or cancels an event, adds a person, a connection or a memo, or answers a question aloud. It looks for the place of an event on the map, keeps the simple things of the day ("My day"), and reminds the user aloud. It can hold the user's own data instead of the example.
+
+Where the work stands on 2026-10-12: nothing was built or recorded since 2026-10-10. Two rounds of practice are done and fixed. The first measure of the speech models on the project owner's voice is done; the first training of the small model gave no gain, for lack of sound. **The next move is the project owner's: more recordings and a third round of practice** (see "Next steps").
 
 What is solid and what is not:
 
 | Part | State |
 | --- | --- |
-| Live transcription (Whisper small, with the user's vocabulary) | Whisper tiny worked but misheard many words in practice. Changed on 2026-10-08; not yet confirmed with a real voice. |
+| Live transcription (Whisper small, with the user's vocabulary) | In use since 2026-10-08. Measured on the project owner's voice on 2026-10-10: about one word in five is wrong, and nearly nine names in ten are right when the names are given to the model. Hebrew names and places are still the weak point in real use. |
 | Voice assistant | Used by voice in two rounds of practice, on the computer and on the iPhone. Each round found things to fix; see "Improvement mode" below. |
 | Spoken reminders | Work in a test, while the app is open. |
 | Connections map | Works, with selection and search. |
 | Automatic memos from a whole conversation (language model) | Weak: finds about half of the news, slow, and too large for a phone. |
 | Accounts and backup | First version works with email and password. Reachable from this computer only until the server is put online. The backup is not encrypted yet. |
-| Place of an event on the map | New on 2026-10-08. Works in a test with a simulated position in Paris. Not tried with a real device position yet. |
+| Place of an event on the map | Works in tests with a simulated position, and was used on the iPhone with its real position (round 2). It finds a place only when the speech model wrote its name right, which was rarely the case for Hebrew place names. |
 | The simple things of the day | New on 2026-10-10: "My day". Things to do every day or on some days of the week, with a tick and the last seven days; questions such as "Did I take my pills?"; something step by step, such as a recipe, where the app keeps the place; the list before leaving home; things good to know; spoken reminders. Works typed, in a browser. Not tried by voice or on the phone. |
 | Training the small speech model | First try on 2026-10-10 with the 7.5 minutes read by the project owner: no gain yet, and the trained model is not stable. See "What was tested". |
-| Data to train a small speech model | New on 2026-10-10: three texts to read aloud (about ten minutes), cut into phrases by `dataset.bat`. Works in a test with a synthetic voice. No real recording yet. |
+| Data to train a small speech model | Three texts to read aloud, cut into phrases by `dataset.bat`. Read once by the project owner on 2026-10-10: 7.5 minutes kept, 38 phrases. Far too little to train on; see "Next steps". |
 | The phone anywhere | New on 2026-10-10: `start-anywhere.bat`, through Tailscale. **Not tried yet**: Tailscale is not installed on the development computer, so only the message that says so was seen. |
 | The user's own data | New on 2026-10-10: the app can start empty, under the user's own name, instead of the example. Works in a test on the computer. |
 | iPhone | First prototype built on 2026-10-08: the iPhone opens the app from the computer over the home Wi-Fi. **Used by the tester on an iPhone 13:** requests by voice and the position worked (the feedback of round 2 partly comes from it). The home-screen icon and the reminders on the iPhone are not confirmed. |
@@ -30,10 +32,10 @@ What is solid and what is not:
 | --- | --- |
 | 0 — Project definition | Done |
 | 1 — Web prototype | Working; not reviewed with a caregiver yet |
-| 2 — Transcription model | Working with a real voice; quality not measured |
+| 2 — Transcription model | Working with a real voice; first measure done. Training a small model on the user's voice has started, without gain yet |
 | 3 — Understanding what is said | Voice requests working by meaning; automatic memos in a first, weak version |
 | 4 — Integration | Started: accounts and a backup of what the user adds, in a database. The app still works from the browser's own copy |
-| 5 — Reminders, caregiver access, user testing | Spoken reminders in a first version; the rest not started |
+| 5 — Reminders, caregiver access, user testing | Spoken reminders in a first version; tested only by the project owner; the rest not started |
 
 ## Improvement mode: where we are now
 
@@ -90,9 +92,13 @@ Not fixed, because the cause is the speech model: "aunt" heard as "own", "Givata
 
 ## How to run it
 
-On an iPhone: double-click `start-phone.bat` and follow the README, section "Use it on an iPhone".
-
-Double-click [start.bat](start.bat). The app opens at http://localhost:8765. The server restarts by itself when its code changes.
+| File to double-click | What it does |
+| --- | --- |
+| [start.bat](start.bat) | The app on this computer, at http://localhost:8765. The server restarts by itself when its code changes. |
+| [start-phone.bat](start-phone.bat) | The same, plus the iPhone on the same Wi-Fi. See the README, section "Use it on an iPhone". After a change in the code, close its window and start it again. |
+| [start-anywhere.bat](start-anywhere.bat) | The same, plus the phone anywhere, through Tailscale. Not tried yet: Tailscale is not installed. |
+| [measure.bat](measure.bat) | Asks what was really said in the kept recordings, then compares the speech models on them. |
+| [dataset.bat](dataset.bat) | Cuts the readings into phrases and writes the training and test files. |
 
 ## What exists
 
@@ -105,6 +111,8 @@ Double-click [start.bat](start.bat). The app opens at http://localhost:8765. The
 | People | A gallery of faces; one page per person with how the user knows them, key facts, latest news, next and last time together. |
 | People, connections | A map with the user in the middle. People are grouped as family, friends, and care. Touching a person highlights their links and shows how the user knows them. A search box finds people from any word about them. |
 | Diary | One page per day: the text of the day, the people seen, the notes, what was planned. |
+| My day | The things to do every day or on some days of the week, with a tick and the last seven days; something step by step, such as a recipe; the list before leaving home; things good to know. |
+| Teach the app my voice | Three texts to read aloud from start to end, recorded for training a small speech model. |
 | Account and backup | Create an account or sign in; shows when the data was last saved. Reached from the bottom of the Today screen. |
 | Listen | Records a whole conversation as text (spoken or typed). Agenda commands and what the language model finds to remember appear as proposals. |
 
@@ -179,7 +187,7 @@ To make a request more robust, add example sentences to `EXAMPLES` in [server/in
 - **A request by voice with a simulated microphone, 2026-10-10,** in a browser on the computer, a recorded sentence played into the app in place of the microphone: the phrase was sent as 16-bit sound, only the finished phrase asked to be kept, the request was answered, and the exchange in the feedback file names the recording.
 - **Feedback never lost, 2026-10-10:** an exchange was in the file as `unanswered` before any verdict; a "no" with a comment replaced it, on the same line count; with the server made unreachable, an exchange and its "yes" waited on the device and arrived once the server was back.
 - **The user's own data, 2026-10-10,** on the computer: after "Start with my own data" the app was empty and greeted the chosen name; a person added by a typed request was kept; every screen opened; going back to the example showed Helen again and the own data was still stored.
-- **Not tested, 2026-10-10:** `start-anywhere.bat` with Tailscale, and all of the above on the iPhone.
+- **Not tested, 2026-10-10:** `start-anywhere.bat` with Tailscale; and on the iPhone, everything of 2026-10-10 except the reading of the three texts.
 - **Keeping and measuring, 2026-10-10,** with three sentences read by a synthetic voice and sent to the server as the app does: a phrase is kept only when asked; labelling, skipping and deleting work; the four models were compared. On these two labelled phrases the numbers mean nothing, they only show that the tool runs. In the app, the switch appears, is off at first, and stays on once set. Not tested: a phrase said into a real microphone with the switch on.
 - **Speech model, 2026-10-08:** ten sentences read by two synthetic voices, three model sizes, with and without the vocabulary. With the vocabulary, every size wrote "Elinor", "Lothan" and "Carmel Coffee" correctly where it had written "Eleanor", "Lathan" or "caramel coffee" without it. On the clear voice all three sizes were otherwise right. On a French synthetic voice reading English, all three made many mistakes and "small" was only slightly better; this voice is a much harder case than a real speaker, so it does not settle the choice of size. A real comparison needs recordings of the tester.
 - **Feedback round 2, replayed typed** in a headless browser: the unknown person, the name asked once, "he is my grandfather" after adding someone, the close place name not chosen, the greeting and "mhm" all gave what the tester wanted.
@@ -195,7 +203,7 @@ To make a request more robust, add example sentences to `EXAMPLES` in [server/in
 - **Required details of an event, typed:** "I have an appointment tomorrow" was completed by answering "3 pm", "Carmel coffee" and "Sarah" to the three questions; "alone" was accepted for an event without anyone.
 - **Improvement mode:** a "yes", a "no" with a comment, and an unanswered request were each saved with the full exchange.
 - **Account:** created an account, wiped the browser, signed in again: the same data came back. A wrong password was refused. A later change was saved by itself.
-- **Not tested:** the assistant with a real voice and real sound from the speakers; the voice itself, since the test replaced it; any phone; anyone other than the developer.
+- **Never tested:** anyone other than the project owner; a person with memory loss; a caregiver. My own checks are typed sentences and synthetic voices: the real voice, the real loudspeaker and the iPhone are only tested by the project owner.
 - **Language model reader** (earlier today): on three typed conversations it found 4 of about 9 pieces of news, with no invented quote, and takes 15 to 40 seconds.
 
 ## Known limits
@@ -205,7 +213,7 @@ To make a request more robust, add example sentences to `EXAMPLES` in [server/in
 - Changing or cancelling picks the single best-fitting event and reads it back; it does not yet ask "which one?" when two fit equally.
 - Name checking compares spelling and a rough idea of sound. It has only been tried on a handful of names.
 - The backup is one document: if two devices change things at the same moment, the one that saves second takes the other's copy and loses its own last change.
-- The server only listens on this computer, so the backup cannot be reached from a phone yet. No password reset, no email check, no limit on sign-in attempts.
+- The accounts and the backup live on the development computer: they are reachable only while it runs. No password reset, no email check, no limit on sign-in attempts.
 - A time said without "am" or "pm" is guessed: 1 to 7 is taken as the afternoon.
 - A new person's name must be capitalized in the transcript, which Whisper does, or follow "named", "called" or "name is".
 - The map search needs the internet. It sends the name of the place and a position rounded to about one kilometre to an open map service (photon.komoot.io, built on OpenStreetMap), which is a free service with no guarantee. A place is only found if its name is written much as the map has it: a name misheard by the speech model is not found, and the place is then kept as said.
@@ -229,23 +237,30 @@ To make a request more robust, add example sentences to `EXAMPLES` in [server/in
 | Where the server for the backup is hosted | Backup from a phone | To decide. Until then it runs on the development computer. |
 | Encrypting the backup so the server cannot read it | Real use | To do before any real data is stored. |
 | Sign in with Google | Accounts | Later. Needs a Google developer project created by the project owner. |
-| How the phone app is built | Phone | Proposal in the guideline, section 7: keep the web pages, move the two small models and the rules into the app, then wrap it in a native shell. To confirm by the project owner. Step 1 (the phone as a screen over the home Wi-Fi) can be done first. |
+| How the phone app is built | Phone | Step 1 of the guideline, section 7, is done: the iPhone is a screen for the computer. Decided on 2026-10-10: the end goal is an app that runs fully on the phone. Still to decide: when to start moving the models and the rules into the app, and how the iPhone app is built without a Mac (a build service in the cloud, or a rented or second-hand Mac; an Apple developer account is needed in every case). |
+| Which speech model in the end | Phone | Open until there is enough sound to measure: a tiny or base model trained on the user's voice, or a model for every language, which may hear Hebrew names better than the English-only one. |
 | Which map service | Real use | The open service used now is fine for a prototype. For real use: a paid service with a guarantee, or our own copy of the map data. |
 | Automatic memos without a large model | Phase 3 | The steps in the guideline, section 7: pick the sentences worth keeping with the small sentence model, then write each memo with a much smaller model trained for that one task. |
 | Speaker separation (who said what) | Phase 3 | To decide. It matters for sentences like "I started a new job". |
 
 ## Next steps
 
-1. **Install Tailscale** on the computer and the phone, try `start-anywhere.bat`, then a **third round of practice** over several days on the iPhone, with the user's own data and "Keep the sound of my voice" switched on.
+For the project owner:
+
+1. **A third round of practice**, over several days, on the iPhone, with your own data and "Keep the sound of my voice" switched on. At home `start-phone.bat` is enough. To practise away from home, install Tailscale on the computer and the phone and try `start-anywhere.bat`.
 2. **Try "My day" for a few days**, by voice, with your own lists and one real recipe. What will most likely need work: the words it understands, and listening hands-free while cooking.
-3. **Read the three texts aloud** ("Teach the app my voice"), more than once on different days, then run `dataset.bat`. With a few hundred phrases, write the training of Whisper tiny on `train.jsonl` and measure it on `test.jsonl`.
-4. **Decide on fine-tuning the speech model.** The plan: first measure. The tool exists since 2026-10-10: switch on "Keep the sound of my voice", practise, then run `measure.bat`. About 100 phrases are enough to compare model sizes fairly, and one to two hours are needed to fine-tune. Fine-tuning is most useful to make a phone-sized model (tiny or base) as good on this voice as the larger one.
-5. **Try the prototype on the iPhone** (`start-phone.bat`) and report what does not work: the microphone, the voice and the position can behave differently on an iPhone.
+3. **More sound for the speech model.** Read the three texts again on different days ("Teach the app my voice"), then run `dataset.bat`. The first reading gave 7.5 minutes; one to two hours are needed. The requests said every day with the switch on count too.
+
+Then, in the code:
+
+4. **Read the feedback of round 3** and fix what it shows.
+5. **Train the small speech model again** once there is at least an hour of sound: with the vocabulary given as in the app, and fewer passes. Measure it on `test.jsonl` against tiny, base, small and the model for every language, and only then choose.
 6. Add the missing voice requests: correct or remove a memo, a permanent fact about a person; choose a place on the map by voice.
-7. Build the "pick the sentences worth keeping" step and compare it with the language model on a set of about 20 conversations.
-8. Encrypt the backup, and decide where the server is hosted.
-9. Show the prototype to a caregiver.
-10. Ideas written in the guideline for later: help when lost, help during a task such as cooking, "leave on time", and an app for relatives.
+7. Start moving the models and the rules into the app (guideline, section 7, step 2), so that the phone no longer needs the computer.
+8. Build the "pick the sentences worth keeping" step and compare it with the language model on a set of about 20 conversations.
+9. Encrypt the backup, and decide where the server is hosted.
+10. Show the prototype to a caregiver.
+11. Ideas written in the guideline for later: help when lost, "leave on time", and an app for relatives. Help during a task such as cooking has a first version in "My day".
 
 ## Decisions made
 
@@ -287,13 +302,15 @@ To make a request more robust, add example sentences to `EXAMPLES` in [server/in
 - **2026-10-07** — Language model reader for summaries and memos; first connections map.
 - **2026-10-07** — Voice assistant on the home screen, understanding requests by meaning; new people, connections and memos by voice; spoken answers and reminders; redesigned connections map with search. Guideline updated with the voice functions, the phone and local plan, accounts, and the "leave on time" idea.
 - **2026-10-07** — Change and cancel an event by voice; "Do you mean ...?" for misheard names; accounts with email and password and a backup. Guideline: help when lost, help during a task, an app for relatives.
+- **2026-10-07** — Improvement mode: a verdict after each request, saved for improving the app. An event now needs a place and a person, and the app asks for them.
 - **2026-10-08** — First round of feedback read and acted on: 11 causes fixed, 18 new tests, larger speech model with the user's vocabulary, hand correction in confirmations, relationship of a known person, change of place.
 - **2026-10-08** — The place of an event is looked for on the map around the user. Guideline: the path to a phone in three steps.
 - **2026-10-08** — iPhone prototype: `start-phone.bat`, secure address with the computer's own certificate, code, home-screen icon, microphone and voice adapted to the iPhone. Project saved on GitHub.
 - **2026-10-08** — Second round of feedback, partly from the iPhone: 12 causes fixed, 9 new tests.
-- **2026-10-10** — "My day" extended to all daily tasks: days of the week, adding by voice, the last seven days, and something step by step (a recipe) where the app keeps the place.
-- **2026-10-10** — "My day": things to do every day, before leaving home, good to know. The project owner read the three texts; first measure on a real voice and first training of tiny, without gain yet.
-- **2026-10-10** — Data for a small speech model: "Teach the app my voice", three texts with Israeli names and places to read from start to end; `dataset.bat` cuts them into phrases with a large model, which also writes down what nobody checked. A first version with one sentence at a time was replaced the same day.
-- **2026-10-10** — For several days of practice everywhere: `start-anywhere.bat` (Tailscale), the user's own data instead of the example, feedback sent at once and never lost, sound sent at half the size.
 - **2026-10-10** — Measuring the speech model: opt-in keeping of the sound of each request, `measure.bat` to label and compare models, feedback moved out of the OneDrive folder.
-- **2026-10-07** — Improvement mode: a verdict after each request, saved for improving the app. An event now needs a place and a person, and the app asks for them.
+- **2026-10-10** — For several days of practice everywhere: `start-anywhere.bat` (Tailscale), the user's own data instead of the example, feedback sent at once and never lost, sound sent at half the size.
+- **2026-10-10** — Data for a small speech model: "Teach the app my voice", three texts with Israeli names and places to read from start to end; `dataset.bat` cuts them into phrases with a large model, which also writes down what nobody checked. A first version with one sentence at a time was replaced the same day.
+- **2026-10-10** — "My day": things to do every day, before leaving home, good to know. The project owner read the three texts; first measure on a real voice and first training of tiny, without gain yet.
+- **2026-10-10** — "My day" extended to all daily tasks: days of the week, adding by voice, the last seven days, and something step by step (a recipe) where the app keeps the place.
+- **2026-10-10** — The app speaks with an English voice of the device, and says so when there is none.
+- **2026-10-12** — Checkpoint brought up to date. Nothing new was built or recorded since 2026-10-10; the 92 tests pass.
