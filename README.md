@@ -179,6 +179,7 @@ Each step is detailed in [GUIDELINE.md](GUIDELINE.md).
 
 - [GUIDELINE.md](GUIDELINE.md) — vision, principles, and the step-by-step plan.
 - [CHECKPOINT.md](CHECKPOINT.md) — current state of the project, updated at each milestone.
+- [NEEDS.md](NEEDS.md) — the needs of a person with Alzheimer's, from the most disabling to the least, and the constraints of use.
 
 ## Disclaimer
 
