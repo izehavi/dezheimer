@@ -136,7 +136,7 @@ Make the product usable in real life.
 ### Later
 
 - **Leave on time.** The app knows where the user is and where the event takes place, works out the travel time, and says when to leave: "You should leave in 15 minutes to be at Carmel coffee at 3." Then again 5 minutes before leaving. It needs the position of the phone, an address for each place, and a travel-time estimate. The address is there since 2026-10-08: the place of a new event is looked for on the map around the user. The travel time and the reminder are still to build.
-- **Help when lost.** People with Alzheimer's sometimes no longer know where they are, why they are there, or where they were going. When the user asks ("Where am I?", "What am I doing here?", "Where was I going?"), the app answers from the position of the phone and the agenda: "You are on Garden Street, near the bakery. You were going to Dr. Martin's office for your appointment at 10:30. It is a 5-minute walk." It can then guide the user there or back home, and offer to call a relative. It only does this when asked, and it stays calm and short.
+- **Help when lost.** People with Alzheimer's sometimes no longer know where they are, why they are there, or where they were going. When the user asks ("Where am I?", "What am I doing here?", "Where was I going?"), the app answers from the position of the phone and the agenda: "You are on Garden Street, near the bakery. You were going to Dr. Martin's office for your appointment at 10:30. It is a 5-minute walk." It can then guide the user there or back home, and offer to call a relative. It only does this when asked, and it stays calm and short. A first version exists since 2026-10-21, for the way to an event ("Take me there"): the app shows the walking way on its own map, notices when the user is off it, says where they are going and where they are, shows the way again, and tells the linked relatives from the second time. Still to build: asking by voice, the way back home, and calling a relative. The needs behind this choice are in [NEEDS.md](NEEDS.md).
 - **The simple things of the day.** A first version exists since 2026-10-10 ("My day"): what to do every day, what to take before leaving home, what is good to know, and a task with steps as described below. Still to build: warning about a step done twice, and listening without touching the screen.
 - **Help during a task.** The user starts a task that has steps, such as cooking a recipe, and the app keeps track of it for as long as the task lasts. The user says what is done ("I have put the salt", "The meat is in"), and can ask at any time "Where am I?", "Did I put the salt?" or "What is next?". The app answers from what was said, reads the next step, and can warn about a step that was skipped or done twice. Nothing is kept once the task is finished. The same idea works for getting dressed, taking medicine, or packing a bag.
 - Mobile app, with reminders that work when the app is closed.
@@ -186,12 +186,12 @@ A first version exists: what the user adds is saved in the account after each ch
 
 This pulls against "local by default", because the backup has to be stored somewhere outside the phone. The rule is: everything is processed on the device, and only the backup leaves it. Before real use, the backup must be encrypted so that the server cannot read it.
 
-**Later: an app for relatives.** The same account system lets a family member or friend have their own app, linked to the user with the user's agreement:
+**An app for relatives.** The same account system lets a family member or friend have their own app, linked to the user with the user's agreement. A first version exists since 2026-10-21: the first screen asks who uses the phone, a relative is linked with a code shown on the user's phone, and gets a notification when the user seems lost. Planned:
 
 - They get a notification when the user is reminded of a meeting with them: "Helen has just been reminded of your lunch at 12:30."
 - They can check that a meeting they have together is in the user's agenda, and add or correct it.
 - They can add news about themselves to their own memo.
-- They can be told if the user asks for help or seems lost.
+- They are told if the user seems lost (done), or asks for help.
 
 Each relative sees only what concerns them, unless the user or the caregiver gives them more.
 

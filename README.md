@@ -71,6 +71,10 @@ The first time the app opens, it asks who uses the phone: **Me** (the person who
 
 To link a relative, both need an account (**Account** at the bottom of the screen). On the person's phone, open **Account** and press **Link a relative**: a code of 6 digits appears, valid for 30 minutes. On the relative's phone, type it under **Link with someone**, with the name the person knows them by. A link says who is told when the person gets lost. Either side can remove it. The choice of who uses the phone can be changed under **Account**.
 
+**Alerts.** When the person is lost a second time on the same walk (see "Take me there"), and each time after, the app tells the linked relatives: where the person is, the street, and where they were going. The person hears "I have told Sarah where you are." The relative's app shows the latest alert of the day for each person, with **See where on the map**, and looks for new ones every 30 seconds while it is open. To be told when the app is closed, press **Turn on notifications** on the relative's phone. On an iPhone this only works from the icon on the home screen (Safari, Share, "Add to Home Screen", iOS 16.4 or later), not in Safari itself.
+
+The notification goes from the computer that runs Dezheimer to the push service of the phone's maker (Apple or Google), encrypted so that this service cannot read it. The relative's phone must reach that computer once, to be linked and to switch notifications on: on the same Wi-Fi, or through Tailscale (`start-anywhere.bat`), where the owner of the computer shares it with the relative's own Tailscale account (in the Tailscale admin console, **Share** on the computer).
+
 ### Use it on an iPhone
 
 The iPhone is the screen, the microphone and the loudspeaker; the models still run on the computer. Both must be on the same Wi-Fi, so this works at home only.

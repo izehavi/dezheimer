@@ -2,13 +2,13 @@
 
 Where the project stands. Updated at the end of each work session or milestone. The plan itself is in [GUIDELINE.md](GUIDELINE.md).
 
-**Last update:** 2026-10-12
+**Last update:** 2026-10-21
 
 ## Current state
 
 **The app is used by voice on a computer and on an iPhone, with the models still running on the computer.** The home screen starts with one large button: the user says one thing, and the app adds, moves or cancels an event, adds a person, a connection or a memo, or answers a question aloud. It looks for the place of an event on the map, keeps the simple things of the day ("My day"), and reminds the user aloud. It can hold the user's own data instead of the example.
 
-Where the work stands on 2026-10-12: nothing was built or recorded since 2026-10-10. Two rounds of practice are done and fixed. The first measure of the speech models on the project owner's voice is done; the first training of the small model gave no gain, for lack of sound. **The next move is the project owner's: more recordings and a third round of practice** (see "Next steps").
+Where the work stands on 2026-10-21: the priorities changed. The needs of a person with Alzheimer's were listed and ordered, from the most disabling to the least, in [NEEDS.md](NEEDS.md); the people memos are no longer the priority. The first need, **getting lost**, has a first version: "Take me there" shows the walking way to an event and watches it, and the relatives linked to the person are told when the person seems lost. For that, the app now has two kinds of users: the person, and a relative. **All of it was tested in headless browsers with simulated positions only: the next move is to try it on two real phones, outside** (see "Next steps").
 
 What is solid and what is not:
 
@@ -26,6 +26,8 @@ What is solid and what is not:
 | Data to train a small speech model | Three texts to read aloud, cut into phrases by `dataset.bat`. Read once by the project owner on 2026-10-10: 7.5 minutes kept, 38 phrases. Far too little to train on; see "Next steps". |
 | The phone anywhere | New on 2026-10-10: `start-anywhere.bat`, through Tailscale. **Not tried yet**: Tailscale is not installed on the development computer, so only the message that says so was seen. |
 | The user's own data | New on 2026-10-10: the app can start empty, under the user's own name, instead of the example. Works in a test on the computer. |
+| Take me there, and help when lost | New on 2026-10-21. The walking way to an event on the app's own map, the next turn said when close; off the way for 30 seconds or "I am lost": where the user is going, the street, the way again. Tested in a headless browser with simulated positions in Paris. **Not tried on a phone or while walking.** |
+| Relatives: roles, links, alerts | New on 2026-10-21. Who uses the phone; a link made with a code; from the second time lost in a walk, the relatives' phones are notified (Web Push, sent by our server). Tested with two headless browsers: Google's push service took the notification. **Not tried on an iPhone, nor through Tailscale sharing.** |
 | iPhone | First prototype built on 2026-10-08: the iPhone opens the app from the computer over the home Wi-Fi. **Used by the tester on an iPhone 13:** requests by voice and the position worked (the feedback of round 2 partly comes from it). The home-screen icon and the reminders on the iPhone are not confirmed. |
 
 | Phase | Status |
@@ -35,7 +37,7 @@ What is solid and what is not:
 | 2 — Transcription model | Working with a real voice; first measure done. Training a small model on the user's voice has started, without gain yet |
 | 3 — Understanding what is said | Voice requests working by meaning; automatic memos in a first, weak version |
 | 4 — Integration | Started: accounts and a backup of what the user adds, in a database. The app still works from the browser's own copy |
-| 5 — Reminders, caregiver access, user testing | Spoken reminders in a first version; tested only by the project owner; the rest not started |
+| 5 — Reminders, caregiver access, user testing | Spoken reminders in a first version; an app for relatives in a first version (links, and alerts when lost); tested only by the project owner and in headless browsers |
 
 ## Improvement mode: where we are now
 
@@ -113,6 +115,9 @@ Not fixed, because the cause is the speech model: "aunt" heard as "own", "Givata
 | Diary | One page per day: the text of the day, the people seen, the notes, what was planned. |
 | My day | The things to do every day or on some days of the week, with a tick and the last seven days; something step by step, such as a recipe; the list before leaving home; things good to know. |
 | Teach the app my voice | Three texts to read aloud from start to end, recorded for training a small speech model. |
+| Who uses this phone | The first screen, once: the person, or a relative. |
+| Take me there | The walking way to an event on a map, the next turn, "I am lost", "Open in Google Maps", "Stop the walk". From the agenda, the home screen and the reminder. |
+| A relative's app | The people they help, the latest alert of the day for each, with the position on a map; switching notifications on; linking with a code. No tabs. |
 | Account and backup | Create an account or sign in; shows when the data was last saved. Reached from the bottom of the Today screen. |
 | Listen | Records a whole conversation as text (spoken or typed). Agenda commands and what the language model finds to remember appear as proposals. |
 
@@ -124,7 +129,10 @@ Not fixed, because the cause is the speech model: "aunt" heard as "own", "Givata
 | [web/js/reading.js](web/js/reading.js), [reading-texts.js](web/js/reading-texts.js) | "Teach the app my voice": the texts to read aloud, and the screen that records a whole reading and sends it to the server while the user reads. |
 | [web/js/mic.js](web/js/mic.js) | The microphone, shared by the assistant and the Listen screen: capture, cutting into phrases, transcription requests. |
 | [web/js/speech.js](web/js/speech.js) | The voice of the app, using the voices installed on the device. |
-| [web/js/reminders.js](web/js/reminders.js) | Spoken reminders 30 minutes before, 5 minutes before, and at the start of each event. |
+| [web/js/reminders.js](web/js/reminders.js) | Spoken reminders 30 minutes before, 5 minutes before, and at the start of each event; "Take me there" when the event has a place on the map. |
+| [web/js/walk.js](web/js/walk.js) | Take me there: the walking way (routing.openstreetmap.de), the map (Leaflet, OpenStreetMap tiles), watching the position, off the way, the help when lost, arrival, the screen kept on. |
+| [web/js/relatives.js](web/js/relatives.js) | Who uses this phone; the relative's app; the links on the Account screen. |
+| [web/js/alerts.js](web/js/alerts.js), [web/sw.js](web/sw.js) | Sends the alert from the person's phone; switches notifications on in the relative's phone; the service worker shows them. |
 | [web/js/graph.js](web/js/graph.js) | The connections map. |
 | [web/js/account.js](web/js/account.js) | Sign-in, and the backup: saves after each change, loads what another device saved. |
 | [web/js/views.js](web/js/views.js) | The Today, Agenda, People and Diary screens. |
@@ -142,7 +150,8 @@ Not fixed, because the cause is the speech model: "aunt" heard as "own", "Givata
 | [server/transcriber.py](server/transcriber.py) | `POST /api/transcribe`: audio to text with `openai/whisper-small.en`. The app sends the user's names and places with each phrase, and the model then prefers those spellings. The size is set by the `DEZHEIMER_ASR_MODEL` variable. |
 | [server/intents.py](server/intents.py) | Finds what a sentence asks for, by meaning, with `sentence-transformers/all-MiniLM-L6-v2` and its list of example sentences. |
 | [server/assistant.py](server/assistant.py) | `POST /api/assist`: the intent, then the details read by rules (names, relationship, how they met, the memo text, the day asked about...). |
-| [server/accounts.py](server/accounts.py) | `/api/account/...`: accounts and backups in a SQLite file. Passwords are stored as salted scrypt hashes, sign-in tokens as hashes. |
+| [server/accounts.py](server/accounts.py) | `/api/account/...`: accounts and backups in a SQLite file. Passwords are stored as salted scrypt hashes, sign-in tokens as hashes. Also the links between a person and their relatives (codes of 6 digits, valid 30 minutes, ten wrong codes an hour at most), the push addresses of the relatives' phones, and the alerts. |
+| [server/push.py](server/push.py) | Web Push: encrypts a notification for one phone (RFC 8291) and signs it with this server's key (VAPID), kept in `%USERPROFILE%\.dezheimer\push`. Written with `cryptography` and `httpx`, without a push library; checked against the reference library `http_ece`. |
 | [server/recordings.py](server/recordings.py), [server/measure.py](server/measure.py) | The phrases kept when the user asks for it, and `measure.bat`: writes down what was really said (`python -m server.measure label`), then scores tiny, base, small and the small model for every language on them (`python -m server.measure`). |
 | [server/readings.py](server/readings.py) | Receives the readings, cuts them at the pauses, and finds the words of the text read in each piece. A piece is left out when it differs too much from the text, when it does not begin and end on words of the text, or when the reader added several words. |
 | [server/finetune.py](server/finetune.py) | `python -m server.finetune`: goes on training Whisper tiny with `train.jsonl`. First checks the gain on words never seen, by leaving each text out in turn; then trains on everything and saves the model in `%USERPROFILE%\.dezheimer\models`. |
@@ -150,7 +159,7 @@ Not fixed, because the cause is the speech model: "aunt" heard as "own", "Givata
 | [server/commands.py](server/commands.py) | Reads an event from a sentence: day, time, people, place, activity. Also `POST /api/command`, used by the Listen screen. |
 | [server/understanding.py](server/understanding.py) | `POST /api/understand`: summary and memos from a whole conversation with `Qwen/Qwen2.5-3B-Instruct`, checked by code. |
 
-Tests are in [tests/](tests/): 92 tests, run with `python -m unittest discover tests`.
+Tests are in [tests/](tests/): 108 tests, run with `python -m unittest discover tests`.
 
 ### How a voice request works
 
@@ -178,6 +187,8 @@ To make a request more robust, add example sentences to `EXAMPLES` in [server/in
 - The project is saved on GitHub: github.com/izehavi/dezheimer, branch `main`.
 
 ## What was tested
+
+- **Getting lost, 2026-10-21,** in headless Chrome at the size of an iPhone, with a test server, an empty data folder, and positions given to the browser. Two phones: "Helen" (the person) and "Sarah" (a relative). The first screen asked who uses the phone; both created an account; a wrong code was refused, Helen's code linked them, and each saw the other. Helen added an event with a place 1.6 km away and pressed "Take me there": the way was found (about 29 minutes on foot, counted slow), drawn on the map, and the next turn followed the walk. 200 metres off the way for 30 seconds: "Helen, do not worry. You are going to: Coffee with Rose, at Café Le Saint-Régis. It starts at 11:17. It is 1.3 kilometres from here. Follow the line on the map..." and a new way from there. "I am lost" a second time added "I have told Sarah where you are": Google's push service took the notification for Sarah's browser. Sarah's app then showed "Helen may be lost", the time, the event and the map link. Arrival ended the walk. The help first came after 21 seconds, waiting for a fresh position; it now uses the position of the walk and comes in under a second. The street is missing where the nearest paths have no name (a courtyard, a quay). Not tested: a real phone, a real walk, a phone in a pocket, a notification on an iPhone, Tailscale sharing with a relative's account.
 
 - **The project owner's own voice, 2026-10-10.** The three texts were read on the phone: 7.9 minutes, cut into 40 pieces, 38 kept (7.5 minutes). First real measure of the speech models, on these 38 phrases (1024 words, 177 names and places). Words wrong, without and with the names of the text given to the model: tiny 35% and 27%; base 61% and 18%; small 23% and 20%. Names and places right: tiny 38% and 76%; base 46% and 85%; small 58% and 88%. To read with care: the texts write numbers in letters ("half past three") and the models write "3:30", which counts as wrong for all of them; the vocabulary given here is the exact list of names of the text, which is more help than in real use; and base without vocabulary at 61% means it lost its way in some phrases.
 - **First training of tiny on that voice, 2026-10-10** (34 phrases, 6.7 minutes, 10 passes). With each text left out in turn: words wrong 35% before, 34% after, without vocabulary; with the vocabulary it became much worse (27% to 80%), because the model was trained without one and then repeats words. On the 4 phrases kept aside, it also went wrong without vocabulary. **Conclusion: 7 minutes are not enough, and this trained model must not be used in the app.** What to try next: much more sound (the phrases said to the assistant every day, and the texts read again), training with the vocabulary as it is used in the app, fewer passes.
@@ -207,6 +218,11 @@ To make a request more robust, add example sentences to `EXAMPLES` in [server/in
 - **Language model reader** (earlier today): on three typed conversations it found 4 of about 9 pieces of news, with no invented quote, and takes 15 to 40 seconds.
 
 ## Known limits
+
+- Take me there: the position is only watched while Dezheimer is on the screen. A locked phone, or Google Maps in front, watches nothing, and nobody is told. Only a real phone app can watch in the background (guideline, section 7, step 3).
+- Take me there: only for an event whose place was found on the map, closer than 5 km, on foot. The way and the street come from a free service with no guarantee (routing.openstreetmap.de) and need the internet. The example events of Helen have no place on the map.
+- Off the way means more than 60 metres from it for 30 seconds; a position less precise than 50 metres is not used. These numbers are guesses, to be set on real walks.
+- An alert reaches a relative only when the person is signed in and linked, and when the relative's notifications are on or the relative opens the app. The person is only told "I have told..." when a notification was taken.
 
 - English only.
 - The assistant understands one request per phrase.
@@ -247,6 +263,7 @@ To make a request more robust, add example sentences to `EXAMPLES` in [server/in
 
 For the project owner:
 
+0. **Try getting lost on two real phones, outside.** The person's phone with `start-anywhere.bat`, an event with a real place, "Take me there", walk off the way, then "I am lost". On the relative's phone, add Dezheimer to the home screen and switch notifications on. Note what was too slow, too much, or unclear.
 1. **A third round of practice**, over several days, on the iPhone, with your own data and "Keep the sound of my voice" switched on. At home `start-phone.bat` is enough. To practise away from home, install Tailscale on the computer and the phone and try `start-anywhere.bat`.
 2. **Try "My day" for a few days**, by voice, with your own lists and one real recipe. What will most likely need work: the words it understands, and listening hands-free while cooking.
 3. **More sound for the speech model.** Read the three texts again on different days ("Teach the app my voice"), then run `dataset.bat`. The first reading gave 7.5 minutes; one to two hours are needed. The requests said every day with the switch on count too.
@@ -260,7 +277,8 @@ Then, in the code:
 8. Build the "pick the sentences worth keeping" step and compare it with the language model on a set of about 20 conversations.
 9. Encrypt the backup, and decide where the server is hosted.
 10. Show the prototype to a caregiver.
-11. Ideas written in the guideline for later: help when lost, "leave on time", and an app for relatives. Help during a task such as cooking has a first version in "My day".
+11. Ideas written in the guideline for later: "leave on time". Help when lost and an app for relatives have a first version; still to do: "Where am I?" and "Take me there" by voice, the way back home, and calling a relative. Help during a task such as cooking has a first version in "My day".
+12. The other needs of [NEEDS.md](NEEDS.md), in the order the project owner chooses.
 
 ## Decisions made
 
@@ -283,6 +301,10 @@ Then, in the code:
 | 2026-10-10 | Away from home, the phone reaches the computer through Tailscale. | The project owner wants to practise for several days everywhere. The models cannot run on the phone yet. A private network between the user's own devices keeps the rule of 2026-10-08: nothing is public and nobody else can read the traffic, unlike a public tunnel. A hosted server would put the voice and the data on someone else's machine. |
 | 2026-10-10 | The app can hold the user's own data instead of the example, stored apart from it. | Practising on top of Helen's family gave false problems ("Do you mean Sarah?") and reminders addressed to Helen. |
 | 2026-10-10 | The sound of a request is kept only when the user switches it on, only for the assistant, and outside the project folder. | It is needed to measure the speech model on a real voice. The Listen tab hears other people, who have not agreed. The project folder is synced to OneDrive. |
+| 2026-10-21 | The needs are ordered from the most disabling to the least ([NEEDS.md](NEEDS.md)); the people memos are no longer the priority. Getting lost comes first. | Decided by the project owner, from the research. |
+| 2026-10-21 | The way is shown on the app's own map (Leaflet, OpenStreetMap), with Google Maps as a button only. | Chosen by the project owner: a web app cannot watch the position while Google Maps is in front. |
+| 2026-10-21 | The relatives are told by a notification in their own Dezheimer app (Web Push), sent by our server. | Chosen by the project owner, over email or a third-party notification app. The push service of Apple or Google carries the message encrypted. |
+| 2026-10-21 | The relatives are told from the second time the person is lost on the same walk, and each time after. | The project owner's rule: "if the person gets lost many times". Once can be a detour. |
 | 2026-10-07 | Everything the app is about to write down must be confirmed first. | A wrong memory is worse than no memory (guideline, principle 2). |
 | 2026-10-07 | Voice requests are understood with a small sentence model and rules, not with a language model. | It is fast (about 50 ms), small enough for a phone, and predictable. The project owner asked for requests to work by meaning, on a phone, locally. |
 | 2026-10-07 | Voice first: the main button of the home screen is the microphone. | Asked by the project owner, for ease of use by an older person. |
@@ -314,3 +336,4 @@ Then, in the code:
 - **2026-10-10** — "My day" extended to all daily tasks: days of the week, adding by voice, the last seven days, and something step by step (a recipe) where the app keeps the place.
 - **2026-10-10** — The app speaks with an English voice of the device, and says so when there is none.
 - **2026-10-12** — Checkpoint brought up to date. Nothing new was built or recorded since 2026-10-10; the 92 tests pass.
+- **2026-10-21** — The needs of a person with Alzheimer's, ordered ([NEEDS.md](NEEDS.md)). Who uses this phone, and links between the person and relatives. Take me there: the walking way to an event, watched; help when lost. Alerts to the relatives' phones by Web Push. 108 tests pass.

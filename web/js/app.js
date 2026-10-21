@@ -97,7 +97,7 @@
 
   render();
   if (!role) { Relatives.mountChoose(); return; }
-  if (role === 'helper') return;
+  if (role === 'helper') { Alerts.start(); return; }
 
   // Keep the clock and "coming next" on the home screen up to date.
   setInterval(() => {

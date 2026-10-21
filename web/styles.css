@@ -737,3 +737,10 @@ button.button:disabled { opacity: 0.45; cursor: not-allowed; }
 .walk-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 18px; }
 .button.lost { flex: 1 1 100%; min-height: 76px; font-size: 1.4rem; background: #A4262C; border-color: #A4262C; color: #FFFFFF; }
 .walk-actions + .source { margin-top: 14px; }
+
+/* ---- Alerts on a relative's phone (relatives.js) ---- */
+
+.helped.alerted { border-color: #A4262C; }
+.alert-box { margin-top: 12px; display: grid; gap: 6px; font-size: 1.1rem; }
+.alert-title { color: #A4262C; font-weight: 700; font-size: 1.3rem; }
+.alert-box .page-action { margin-top: 10px; }

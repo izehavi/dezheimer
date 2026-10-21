@@ -52,6 +52,12 @@ def _db():
         CREATE TABLE IF NOT EXISTS links (
             person_id INTEGER NOT NULL, helper_id INTEGER NOT NULL, person_name TEXT NOT NULL,
             helper_name TEXT NOT NULL, created REAL NOT NULL, PRIMARY KEY (person_id, helper_id));
+        CREATE TABLE IF NOT EXISTS subscriptions (
+            endpoint TEXT PRIMARY KEY, user_id INTEGER NOT NULL, p256dh TEXT NOT NULL, auth TEXT NOT NULL,
+            created REAL NOT NULL);
+        CREATE TABLE IF NOT EXISTS alerts (
+            id INTEGER PRIMARY KEY, person_id INTEGER NOT NULL, created REAL NOT NULL, lat REAL NOT NULL,
+            lon REAL NOT NULL, accuracy REAL, street TEXT, title TEXT, place TEXT, start REAL, times INTEGER);
     """)
     try:
         with db:
@@ -220,3 +226,62 @@ def unlink(user_id, other_id):
     with _db() as db:
         db.execute("DELETE FROM links WHERE (person_id = ? AND helper_id = ?) OR (person_id = ? AND helper_id = ?)",
                    (user_id, other_id, other_id, user_id))
+
+
+# ---- Alerts: the person seems lost, and the relatives are told ----
+
+ALERTS_SHOWN_SECONDS = 24 * 3600
+
+
+def subscribe(user_id, endpoint, p256dh, auth):
+    """Keep where to send notifications to this user's phone (push.py)."""
+    with _db() as db:
+        db.execute(
+            "INSERT INTO subscriptions VALUES (?, ?, ?, ?, ?) ON CONFLICT(endpoint) DO UPDATE SET "
+            "user_id = excluded.user_id, p256dh = excluded.p256dh, auth = excluded.auth",
+            (endpoint, user_id, p256dh, auth, time.time()),
+        )
+
+
+def subscriptions(user_id):
+    with _db() as db:
+        rows = db.execute("SELECT endpoint, p256dh, auth FROM subscriptions WHERE user_id = ?", (user_id,)).fetchall()
+    return [{"endpoint": e, "p256dh": k, "auth": a} for e, k, a in rows]
+
+
+def unsubscribe(endpoint):
+    with _db() as db:
+        db.execute("DELETE FROM subscriptions WHERE endpoint = ?", (endpoint,))
+
+
+def add_alert(person_id, alert):
+    """Keep an alert: where the person is, and where they were going."""
+    with _db() as db:
+        cursor = db.execute(
+            "INSERT INTO alerts (person_id, created, lat, lon, accuracy, street, title, place, start, times) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            (person_id, time.time(), alert["lat"], alert["lon"], alert.get("accuracy"), alert.get("street"),
+             alert.get("title"), alert.get("place"), alert.get("start"), alert.get("times")),
+        )
+    return cursor.lastrowid
+
+
+def alerts_for(helper_id):
+    """The alerts of the last day about the people this relative helps, the latest first."""
+    with _db() as db:
+        rows = db.execute(
+            "SELECT a.id, a.person_id, l.person_name, a.created, a.lat, a.lon, a.accuracy, a.street, a.title, "
+            "a.place, a.start, a.times FROM alerts a JOIN links l ON l.person_id = a.person_id "
+            "WHERE l.helper_id = ? AND a.created >= ? ORDER BY a.created DESC",
+            (helper_id, time.time() - ALERTS_SHOWN_SECONDS),
+        ).fetchall()
+    keys = ("id", "person_id", "name", "created", "lat", "lon", "accuracy", "street", "title", "place", "start", "times")
+    return [dict(zip(keys, row)) for row in rows]
+
+
+def person_name(person_id):
+    """The name the person gave their relatives, or None when nobody is linked."""
+    with _db() as db:
+        row = db.execute("SELECT person_name FROM links WHERE person_id = ? ORDER BY created DESC LIMIT 1",
+                         (person_id,)).fetchone()
+    return row[0] if row else None

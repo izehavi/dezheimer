@@ -2,7 +2,7 @@
 //
 // The first time the app opens, it asks who uses this phone: the person with memory
 // loss, or a relative who helps them. A relative's app is a different, small app:
-// the people they help, and later the alerts when one of them is lost.
+// the people they help, and the alerts when one of them seems lost (alerts.js).
 //
 // To be linked, the person's app shows a code of 6 digits (on the Account screen),
 // and the relative types it in their own app. Both need an account. A link says
@@ -16,6 +16,9 @@ const Relatives = (() => {
 
   let links = null;          // { helpers: [{ id, name }], people: [{ id, name }] }, once loaded
   let code = null;           // { code, expires } shown to the person
+  let alerts = [];           // on a relative's phone: the alerts of the last day, the latest first
+  let notifications = null;  // on a relative's phone: 'on', 'off', 'denied', 'unsupported' or 'error'
+  const CHECK_EVERY_MS = 30000;
   let message = '';
   let isError = false;
 
@@ -37,6 +40,10 @@ const Relatives = (() => {
     if (!Account.signedIn()) { links = null; return; }
     const res = await Account.api('GET', 'links');
     if (res.ok) links = res.data;
+    if (role === 'helper') {
+      alerts = (await Alerts.latest()) || alerts;
+      if (notifications !== 'error') notifications = await Alerts.state();
+    }
   };
 
   // ---- The first screen: who uses this phone ----
@@ -80,16 +87,52 @@ const Relatives = (() => {
     <div id="relatives"></div>
     <p class="page-action account-link"><a href="#/account">Account, and who uses this phone</a></p>`;
 
+  const mapLink = (a) => `https://www.google.com/maps/search/?api=1&query=${a.lat},${a.lon}`;
+
+  // The latest alert about a person: when, where they were going, where they were.
+  const alertCard = (a) => {
+    const now = new Date();
+    const when = new Date(a.created * 1000);
+    const going = a.title ? `${a.title}${a.place ? `, ${a.place.replace(/^At\s+/i, 'at ')}` : ''}${a.start ? `, at ${Dates.time(new Date(a.start))}` : ''}` : '';
+    return `
+      <div class="alert-box">
+        <p class="alert-title">${esc(a.name)} may be lost</p>
+        <p>${esc(Dates.relative(when, now))} at ${esc(Dates.time(when))}, lost ${a.times || 1} ${a.times === 1 ? 'time' : 'times'} on the way${going ? ` to: ${esc(going)}` : ''}.</p>
+        ${a.street ? `<p>On ${esc(a.street)}.</p>` : ''}
+        <p class="page-action"><a class="button primary" href="${mapLink(a)}" target="_blank" rel="noopener">See where on the map</a></p>
+        ${a.accuracy ? `<p class="source">Position within about ${Math.round(a.accuracy)} metres.</p>` : ''}
+      </div>`;
+  };
+
   const peopleList = () => {
     if (!links) return '<p class="empty">Loading…</p>';
     if (!links.people.length) return '<p class="empty">You are not linked to anyone yet.</p>';
-    return links.people.map((p) => `
-      <article class="card helped">
+    return links.people.map((p) => {
+      const last = alerts.find((a) => a.person_id === p.id);
+      return `
+      <article class="card helped${last ? ' alerted' : ''}">
         <h3>${esc(p.name)}</h3>
-        <p class="source">Linked. You will be told here if ${esc(p.name)} gets lost.</p>
+        ${last ? alertCard(last) : `<p class="source">No alert in the last day. You will be told if ${esc(p.name)} seems lost on the way somewhere.</p>`}
         <button class="link-button" type="button" data-unlink="${p.id}" data-name="${esc(p.name)}">Remove this link</button>
-      </article>`).join('');
+      </article>`;
+    }).join('');
   };
+
+  const NOTIFY = {
+    on: 'Notifications are on: this phone is told at once, even when the app is closed.',
+    off: 'Notifications are off: you only see an alert when you open the app.',
+    denied: 'Notifications are refused for Dezheimer on this phone. Allow them in the settings of the phone, then come back.',
+    unsupported: 'This browser cannot get notifications. On an iPhone: in Safari, tap Share, then "Add to Home Screen", and open Dezheimer from its icon.',
+    error: 'Notifications could not be switched on. The Dezheimer server may not be reachable.',
+  };
+
+  const notifyCard = () => (notifications ? `
+    <section>
+      <h2>Notifications</h2>
+      <div class="card"><p>${esc(NOTIFY[notifications])}</p></div>
+      ${notifications === 'on' || notifications === 'unsupported' ? ''
+        : '<p class="page-action"><button class="button primary" type="button" data-rel="notify">Turn on notifications</button></p>'}
+    </section>` : '');
 
   const joinForm = () => `
     <section>
@@ -108,7 +151,7 @@ const Relatives = (() => {
   const paintHelper = () => {
     const box = document.getElementById('relatives');
     if (!box) return;
-    box.innerHTML = Account.signedIn() ? `<section>${peopleList()}</section>${joinForm()}` : `
+    box.innerHTML = Account.signedIn() ? `<section>${peopleList()}</section>${notifyCard()}${joinForm()}` : `
       <section>
         <div class="card">
           <p>To be linked with someone, you need an account.</p>
@@ -160,6 +203,7 @@ const Relatives = (() => {
       </section>`;
   };
 
+  let checking = null;
   let draw = () => {};       // paints the box of the screen showing: the relative's home, or the Account screen
 
   const refresh = async () => {
@@ -196,6 +240,10 @@ const Relatives = (() => {
         else note((res && res.data.detail) || 'The Dezheimer server is not answering.', true);
         draw();
       }
+      if (button.dataset.rel === 'notify') {
+        notifications = await Alerts.enable().catch(() => 'error');
+        draw();
+      }
       if (button.dataset.rel === 'role') {
         if (!confirm('Change who uses this phone? The app will start again.')) return;
         setRole(null);
@@ -224,6 +272,13 @@ const Relatives = (() => {
       }
     });
 
+    // On the relative's home screen, look for new alerts while it is showing.
+    if (onHome) {
+      clearInterval(checking);
+      checking = setInterval(() => {
+        if (document.getElementById('relatives') && document.visibilityState === 'visible') refresh();
+      }, CHECK_EVERY_MS);
+    }
     // A code is only shown just after it is asked for: once used, it means nothing.
     code = null;
     note('');

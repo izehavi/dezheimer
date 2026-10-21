@@ -4,7 +4,7 @@
 // it, and shows it. While the app is open the position is watched: when the user is
 // off the way for a while, the app says calmly where they are going and where they
 // are, works out the way again from there, and shows it. After a second time in the
-// same walk, the relatives linked to the user are told (alerts.js).
+// same walk, and each time after, the relatives linked to the user are told (alerts.js).
 //
 // The way is asked of an open routing service built on OpenStreetMap, with the
 // position of the start and of the place. The map is drawn with Leaflet.
@@ -28,7 +28,7 @@ const Walk = (() => {
   // { eventId, title, place, start, to: [lat, lon], route, lost: [times], told, began }
   // route: { coords: [[lat, lon]], steps: [{ at, idx, text, said }], metres, seconds }
   let walk = null;
-  let here = null;                // { at: [lat, lon], accuracy }
+  let here = null;                // { at: [lat, lon], accuracy, time }
   let watchId = null;
   let offSince = null;
   let helping = false;            // the app is telling the user the way again
@@ -124,11 +124,14 @@ const Walk = (() => {
     return { coords, steps, metres: r.distance, seconds: r.duration * SLOWER };
   };
 
-  // The name of the street at `p`, from the same routing service, or null.
+  // The name of the street at `p`, from the same routing service, or null. The very
+  // nearest path is often a pavement with no name: the nearest named one, if close.
+  const STREET_WITHIN_M = 40;
   const streetAt = async (p) => {
-    const res = await fetch(`${ROUTE_URL}/nearest/v1/foot/${p[1]},${p[0]}`);
+    const res = await fetch(`${ROUTE_URL}/nearest/v1/foot/${p[1]},${p[0]}?number=10`);
     const data = await res.json();
-    return (data.waypoints && data.waypoints[0] && data.waypoints[0].name) || null;
+    const named = (data.waypoints || []).find((w) => w.name && w.distance <= STREET_WITHIN_M);
+    return named ? named.name : null;
   };
 
   const minutes = (seconds) => Math.max(1, Math.round(seconds / 60));
@@ -137,12 +140,14 @@ const Walk = (() => {
 
   // ---- Where the user is ----
 
-  const locate = () => new Promise((resolve) => {
+  const FRESH_MS = 15000;
+
+  const locate = (wait = 20000) => new Promise((resolve) => {
     if (!navigator.geolocation) { resolve(null); return; }
     navigator.geolocation.getCurrentPosition(
-      ({ coords }) => resolve({ at: [coords.latitude, coords.longitude], accuracy: coords.accuracy }),
+      ({ coords }) => resolve({ at: [coords.latitude, coords.longitude], accuracy: coords.accuracy, time: Date.now() }),
       () => resolve(null),
-      { enableHighAccuracy: true, timeout: 20000, maximumAge: 10000 },
+      { enableHighAccuracy: true, timeout: wait, maximumAge: 10000 },
     );
   });
 
@@ -156,7 +161,7 @@ const Walk = (() => {
   const watch = () => {
     if (watchId !== null || !navigator.geolocation) return;
     watchId = navigator.geolocation.watchPosition(
-      ({ coords }) => moved({ at: [coords.latitude, coords.longitude], accuracy: coords.accuracy }),
+      ({ coords }) => moved({ at: [coords.latitude, coords.longitude], accuracy: coords.accuracy, time: Date.now() }),
       () => {},
       { enableHighAccuracy: true, maximumAge: 5000, timeout: 30000 },
     );
@@ -221,12 +226,16 @@ const Walk = (() => {
     save();
     help = 'One moment, I am looking for the way…';
     paintHelp();
-    const position = (await locate()) || here;
+    // Someone who is lost should not wait: the position of the walk, if it is recent.
+    const fresh = here && Date.now() - here.time < FRESH_MS && here.accuracy <= POOR_FIX_M;
+    const position = (fresh ? here : await locate(8000)) || here;
     const name = SampleData.user.name;
     let text = '';
+    let street = null;
     if (position) {
       here = position;
-      const [street, route] = await Promise.all([
+      let route;
+      [street, route] = await Promise.all([
         streetAt(here.at).catch(() => null),
         fetchRoute(here.at, walk.to).catch(() => null),
       ]);
@@ -239,8 +248,9 @@ const Walk = (() => {
         text += ' Follow the line on the map.';
       }
     }
-    if (walk.lost.length >= TELL_AFTER && !walk.told) {
-      const told = await tellRelatives({ ...walk, here }).catch(() => null);
+    // From the second time, the relatives are told each time, with where the user is now.
+    if (walk.lost.length >= TELL_AFTER) {
+      const told = await tellRelatives({ ...walk, here, street }).catch(() => null);
       if (told && told.length) {
         walk.told = true;
         text += ` I have told ${told.join(' and ')} where you are.`;

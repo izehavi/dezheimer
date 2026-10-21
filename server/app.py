@@ -15,7 +15,7 @@ from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
-from . import accounts, readings, recordings
+from . import accounts, push, readings, recordings
 from .assistant import assist
 from .commands import parse_command
 from .intents import classifier
@@ -332,6 +332,82 @@ def join_person(join: Join, request: Request):
 def remove_link(other_id: int, request: Request):
     accounts.unlink(signed_in_user(request), other_id)
     return {}
+
+
+# ---- Alerts: the person seems lost, and the relatives are told ----
+
+
+class Subscription(BaseModel):
+    endpoint: str = Field(max_length=2000)
+    p256dh: str = Field(max_length=200)
+    auth: str = Field(max_length=100)
+
+
+class Lost(BaseModel):
+    lat: float = Field(ge=-90, le=90)
+    lon: float = Field(ge=-180, le=180)
+    accuracy: float | None = None
+    street: str | None = Field(default=None, max_length=200)
+    title: str | None = Field(default=None, max_length=200)     # the event the person was going to
+    place: str | None = Field(default=None, max_length=300)
+    start: float | None = None                                   # its start, in milliseconds since 1970
+    times: int = Field(default=1, ge=1, le=100)                  # how many times lost on this walk
+
+
+@app.get("/api/push/key")
+def push_key():
+    return {"key": push.public_key()}
+
+
+@app.post("/api/account/push")
+def subscribe(subscription: Subscription, request: Request):
+    if not subscription.endpoint.startswith("https://"):
+        raise HTTPException(400, "Not a push address.")
+    accounts.subscribe(signed_in_user(request), subscription.endpoint, subscription.p256dh, subscription.auth)
+    return {}
+
+
+def _when(start_ms):
+    if start_ms is None:
+        return ""
+    return dt.datetime.fromtimestamp(start_ms / 1000).strftime(" at %H:%M")
+
+
+@app.post("/api/account/alerts")
+async def alert_relatives(lost: Lost, request: Request):
+    """The person seems lost: keep it, and notify every phone of every linked relative.
+
+    Returns the names of the relatives whose phone took the notification.
+    """
+    person_id = signed_in_user(request)
+    name = accounts.person_name(person_id)
+    if name is None:
+        return {"told": []}
+    accounts.add_alert(person_id, lost.model_dump())
+    going = f"{lost.title}{', ' + lost.place if lost.place else ''}{_when(lost.start)}" if lost.title else "somewhere"
+    message = {
+        "title": f"{name} may be lost",
+        "body": f"Lost {lost.times} times on the way to: {going}."
+                + (f" Now on {lost.street}." if lost.street else "") + " Open to see where.",
+        "url": "/#/",
+    }
+    told = []
+    for helper in accounts.links(person_id)["helpers"]:
+        reached = False
+        for subscription in accounts.subscriptions(helper["id"]):
+            status = await run_in_threadpool(push.send, subscription, message)
+            if status in (404, 410):
+                accounts.unsubscribe(subscription["endpoint"])
+            reached = reached or 200 <= status < 300
+        if reached:
+            told.append(helper["name"])
+    return {"told": told}
+
+
+@app.get("/api/account/alerts")
+def get_alerts(request: Request):
+    """For a relative: the alerts of the last day about the people they help."""
+    return accounts.alerts_for(signed_in_user(request))
 
 
 # Registered last so that it does not shadow the API routes.
