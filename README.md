@@ -57,6 +57,12 @@ The place is kept if the app is closed, for six hours. Two examples are there, a
 
 Under **Change my lists** you add and remove things. With your own data the lists start empty; **Start with the usual ones** puts the pills, the three meals, keys, phone and card, and the two examples of steps. Do not write a secret code there yet: the backup is not encrypted.
 
+### For a relative
+
+The first time the app opens, it asks who uses the phone: **Me** (the person who wants help with their memory) or **A relative** (someone who helps them). A relative's app is a small, separate app: the people they help.
+
+To link a relative, both need an account (**Account** at the bottom of the screen). On the person's phone, open **Account** and press **Link a relative**: a code of 6 digits appears, valid for 30 minutes. On the relative's phone, type it under **Link with someone**, with the name the person knows them by. A link says who is told when the person gets lost. Either side can remove it. The choice of who uses the phone can be changed under **Account**.
+
 ### Use it on an iPhone
 
 The iPhone is the screen, the microphone and the loudspeaker; the models still run on the computer. Both must be on the same Wi-Fi, so this works at home only.

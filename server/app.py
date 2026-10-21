@@ -295,5 +295,44 @@ def save_backup(backup: Backup, request: Request):
         raise HTTPException(413, str(error))
 
 
+# ---- Links between the person and the relatives who help them ----
+
+
+class Invite(BaseModel):
+    name: str = Field(max_length=200)  # the person's name, as the relatives will see it
+
+
+class Join(BaseModel):
+    code: str = Field(max_length=20)
+    name: str = Field(max_length=200)  # the relative's name, as the person will see it
+
+
+@app.get("/api/account/links")
+def get_links(request: Request):
+    return accounts.links(signed_in_user(request))
+
+
+@app.post("/api/account/links/invite")
+def make_invite(invite: Invite, request: Request):
+    try:
+        return accounts.invite(signed_in_user(request), invite.name)
+    except accounts.AccountError as error:
+        raise HTTPException(400, str(error))
+
+
+@app.post("/api/account/links/join")
+def join_person(join: Join, request: Request):
+    try:
+        return accounts.join(signed_in_user(request), join.code, join.name)
+    except accounts.AccountError as error:
+        raise HTTPException(400, str(error))
+
+
+@app.delete("/api/account/links/{other_id}")
+def remove_link(other_id: int, request: Request):
+    accounts.unlink(signed_in_user(request), other_id)
+    return {}
+
+
 # Registered last so that it does not shadow the API routes.
 app.mount("/", StaticFiles(directory=WEB_DIR, html=True), name="web")

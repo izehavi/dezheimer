@@ -685,3 +685,32 @@ button.button:disabled { opacity: 0.45; cursor: not-allowed; }
   .day-name { font-size: 0.75rem; }
   .day-number { font-size: 1.3rem; }
 }
+
+/* ---- Who uses this phone, and the relatives (relatives.js) ---- */
+
+/* A relative's app has no tabs. */
+.tabs[hidden] { display: none; }
+
+.roles { display: grid; gap: 18px; margin-top: 28px; }
+
+.role-choice {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  padding: 28px 20px;
+  background: var(--surface);
+  border: 3px solid var(--line);
+  border-radius: var(--radius);
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+.role-choice:active { border-color: var(--accent); background: var(--accent-soft); }
+.role-icon { font-size: 3.5rem; line-height: 1; }
+.role-title { font-size: 1.7rem; font-weight: 700; }
+.role-text { font-size: 1.2rem; color: var(--muted); }
+.roles + .source { margin-top: 18px; }
+
+.helped .link-button { margin-top: 10px; }
+.invite { margin-top: 14px; border-color: var(--accent); background: var(--accent-soft); text-align: center; }
+.invite-code { font-size: 3rem; font-weight: 700; letter-spacing: 0.12em; margin: 8px 0 4px; }

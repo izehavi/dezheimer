@@ -12,8 +12,21 @@
   const screen = document.getElementById('screen');
   const tabs = document.querySelectorAll('.tabs a');
 
+  const role = Relatives.role();
+  // A relative's phone has its own small app, without the tabs of the person's app.
+  document.querySelector('.tabs').hidden = role !== 'person';
+
   const render = () => {
     const [tab = '', arg = ''] = location.hash.replace(/^#\/?/, '').split('/');
+
+    // The first time: who uses this phone (relatives.js).
+    if (!role) { screen.innerHTML = Relatives.chooseView(); return 'choose'; }
+    if (role === 'helper') {
+      screen.innerHTML = tab === 'account' ? Account.view() : Relatives.helperHome();
+      if (tab === 'account') Account.mount(); else Relatives.mount();
+      return 'helper';
+    }
+
     const now = new Date();
     let active = 'home';
     let html;
@@ -77,6 +90,10 @@
     window.scrollTo(0, 0);
   });
 
+  render();
+  if (!role) { Relatives.mountChoose(); return; }
+  if (role === 'helper') return;
+
   // Keep the clock and "coming next" on the home screen up to date.
   setInterval(() => {
     const onHome = !location.hash.replace(/^#\/?/, '');
@@ -84,7 +101,6 @@
     if (onHome && Assistant.idle()) render();
   }, 60000);
 
-  render();
   Day.start(render);
   Reminders.start();
   // The backup may bring data from another device: show it when it arrives.

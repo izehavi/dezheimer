@@ -28,6 +28,9 @@ const Account = (() => {
     } catch { /* stays signed in until the page is closed */ }
   };
 
+  // Signed in or out: the links with relatives (relatives.js) are shown again.
+  const announce = () => window.dispatchEvent(new Event('dezheimer-account'));
+
   const call = async (method, path, body) => {
     const res = await fetch(`/api/account/${path}`, {
       method,
@@ -84,6 +87,7 @@ const Account = (() => {
     remember();
     note(text, true);
     paint();
+    announce();
   };
 
   const enter = async (path, email, password) => {
@@ -109,6 +113,7 @@ const Account = (() => {
       note('The Dezheimer server is not answering.', true);
     }
     paint();
+    announce();
   };
 
   // ---- Screen ----
@@ -117,9 +122,12 @@ const Account = (() => {
     <a class="back" href="#/">← Back</a>
     <header class="page-head with-back">
       <h1>Account and backup</h1>
-      <p class="sub">Sign in to keep a copy of what you add, and to find it again on another device.</p>
+      <p class="sub">${Relatives.role() === 'helper'
+        ? 'Sign in to be linked with the people you help.'
+        : 'Sign in to keep a copy of what you add, and to find it again on another device.'}</p>
     </header>
-    <div id="account"></div>`;
+    <div id="account"></div>
+    ${Relatives.accountView()}`;
 
   const paint = () => {
     const box = document.getElementById('account');
@@ -148,7 +156,8 @@ const Account = (() => {
           <button class="button" type="submit" data-do="signup">Create my account</button>
         </div>
       </form>`;
-    box.insertAdjacentHTML('beforeend', profileCard());
+    // A relative's phone shows no data of its own.
+    if (Relatives.role() !== 'helper') box.insertAdjacentHTML('beforeend', profileCard());
   };
 
   // Whose data the app shows: the example user, or the person who uses this device.
@@ -201,6 +210,7 @@ const Account = (() => {
         remember();
         note('You are signed out. Your data stays on this device.');
         paint();
+        announce();
       }
       if (action === 'signin' || action === 'signup') {
         e.preventDefault();
@@ -210,6 +220,7 @@ const Account = (() => {
       }
     });
     paint();
+    Relatives.mount();
   };
 
   // Called once when the app opens.
@@ -223,5 +234,8 @@ const Account = (() => {
     if (session && location.protocol !== 'file:') sync().then(paint).catch(() => {});
   };
 
-  return { view, mount, start, signedIn: () => !!session };
+  // `path` under /api/account/. Used by relatives.js for the links.
+  const api = (method, path, body) => call(method, path, body);
+
+  return { view, mount, start, api, signedIn: () => !!session };
 })();
