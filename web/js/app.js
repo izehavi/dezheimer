@@ -8,6 +8,7 @@
 //   #/day[/steps]       what to do today, before leaving home, good to know; something step by step
 //   #/account           sign in, backup
 //   #/read              read a long text aloud, to teach the app the user's voice
+//   #/walk[/EVENT]      the way to the place of an event, watched while walking
 (() => {
   const screen = document.getElementById('screen');
   const tabs = document.querySelectorAll('.tabs a');
@@ -50,6 +51,9 @@
     } else if (tab === 'read') {
       active = 'read';
       html = Reading.view();
+    } else if (tab === 'walk') {
+      active = 'walk';
+      html = Walk.view();
     } else if (tab === 'listen') {
       active = 'listen';
       html = Listen.view();
@@ -68,6 +72,7 @@
     if (active === 'home') Assistant.mount(render);
     if (active === 'connections') { Graph.mount(); active = 'people'; }
     if (active === 'read') { Reading.mount(); active = 'home'; }
+    if (active === 'walk') { Walk.mount(arg); active = 'agenda'; }
     if (active === 'account' || active === 'day') active = 'home';
     tabs.forEach((a) => {
       if (a.dataset.tab === active) a.setAttribute('aria-current', 'page');
@@ -103,6 +108,7 @@
 
   Day.start(render);
   Reminders.start();
+  Walk.start();
   // The backup may bring data from another device: show it when it arrives.
   Account.start(render);
 })();

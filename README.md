@@ -57,6 +57,14 @@ The place is kept if the app is closed, for six hours. Two examples are there, a
 
 Under **Change my lists** you add and remove things. With your own data the lists start empty; **Start with the usual ones** puts the pills, the three meals, keys, phone and card, and the two examples of steps. Do not write a secret code there yet: the backup is not encrypted.
 
+### Take me there
+
+An event whose place was found on the map has a **Take me there** button, in the agenda and on the home screen, and in its reminder. The app finds the walking way from where you are and shows it on its own map, with the next turn written large and said aloud when it is close. The time on foot is counted for a slow walk.
+
+While the app is open, it watches the way. When you are off the way for 30 seconds, or when you press **I am lost**, it says calmly where you are going, the time of the event and the street you are on, finds the way again from where you are, and shows it. When you arrive, it says so. The walk is kept if the app is closed, for six hours.
+
+Keep Dezheimer open on the screen during the walk: a web app only gets the position while it is showing, so nothing is watched when the phone is locked or when Google Maps is in front (**Open in Google Maps** is there for whoever prefers it). The screen is kept on. Places further than 5 km are not walked to: the app says to ask someone to drive, or to take a taxi. The way is found by an open routing service built on OpenStreetMap (routing.openstreetmap.de), to which the position of the start and of the place are sent.
+
 ### For a relative
 
 The first time the app opens, it asks who uses the phone: **Me** (the person who wants help with their memory) or **A relative** (someone who helps them). A relative's app is a small, separate app: the people they help.

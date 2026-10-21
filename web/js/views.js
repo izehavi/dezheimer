@@ -39,6 +39,7 @@ const Views = (() => {
           <p class="event-place">${esc(e.place)}</p>
           ${e.address ? `<p class="event-address">${esc(e.address)}</p>` : ''}
           ${e.lat ? `<a class="event-map" href="${esc(Places.mapLink(e))}" target="_blank" rel="noopener">Show on the map</a>` : ''}
+          ${Walk.button(e, now)}
           ${e.note ? `<p class="event-note">${esc(e.note)}</p>` : ''}
           ${chips(e.personIds)}
           ${e.added ? `<p class="added-tag">Added by voice ${removeButton('events', e)}</p>` : ''}
@@ -73,6 +74,8 @@ const Views = (() => {
         <h1>${greeting(now)}, ${esc(user.name)}</h1>
         <p class="hello-time">It is ${esc(Dates.time(now))}</p>
       </header>
+
+      ${Walk.homeBlock()}
 
       ${Assistant.view()}
 

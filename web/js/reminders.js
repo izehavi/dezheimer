@@ -49,11 +49,19 @@ const Reminders = (() => {
     const text = reminder.text || sentence(reminder);
     const banner = document.getElementById('reminder');
     banner.querySelector('p').textContent = text;
+    // An event with a place on the map: the way there is one touch away (walk.js).
+    const go = document.getElementById('reminder-go');
+    go.hidden = !(reminder.event && reminder.event.lat);
+    if (reminder.event) go.href = `#/walk/${reminder.event.id}`;
     banner.hidden = false;
     Speech.say(text);
   };
 
   const start = () => {
+    document.getElementById('reminder-go').addEventListener('click', () => {
+      document.getElementById('reminder').hidden = true;
+      Speech.stop();
+    });
     document.getElementById('reminder').querySelector('button').addEventListener('click', () => {
       document.getElementById('reminder').hidden = true;
       Speech.stop();
