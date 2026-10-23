@@ -92,8 +92,8 @@ The notification goes from the computer that runs Near to the push service of th
 The iPhone is the screen, the microphone and the loudspeaker; the models still run on the computer. Both must be on the same Wi-Fi, so this works at home only.
 
 1. On the computer, close the Near window if one is open, then double-click `start-phone.bat`. If Windows asks whether Python may be reached from the network, allow it for private networks.
-2. The window shows two addresses and a 6-digit code. In Safari on the iPhone, open the first address (it starts with `http://`) and follow the steps of the page: download the certificate, install it, trust it. This is done once.
-3. Open the second address (it starts with `https://`), type the code, and allow the microphone and the position.
+2. The window shows two addresses, their QR codes and a 6-digit code, and the computer opens a page with the same QR codes. Point the iPhone camera at the first one (or type the address that starts with `http://` in Safari) and follow the steps of the page: download the certificate, install it, trust it. This is done once.
+3. Open the second address (it starts with `https://`, or scan the second QR code), type the code, and allow the microphone and the position.
 4. In Safari, tap Share, then "Add to Home Screen". Near then opens like an app.
 
 The certificate is made by your computer and only lets the iPhone trust that computer. The code is there because anyone on the same Wi-Fi can reach the address.
@@ -110,7 +110,7 @@ Once:
 Then:
 
 1. On the computer, close the Near window if one is open, and double-click `start-anywhere.bat`. The first time, Tailscale may give a link to allow secure addresses (HTTPS) for your devices: open it, allow, and start again.
-2. The window shows an address that starts with `https://`. Open it in Safari on the phone and allow the microphone and the position. There is no certificate to install and no code.
+2. The window shows an address that starts with `https://`, and its QR code. Point the phone camera at it, or type it in Safari, and allow the microphone and the position. There is no certificate to install and no code.
 3. In Safari, tap Share, then "Add to Home Screen".
 
 While the window is open, Windows does not go to sleep by itself. Closing the lid of a laptop still puts it to sleep, unless you change that in the Windows power settings.

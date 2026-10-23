@@ -24,6 +24,7 @@ from pathlib import Path
 
 import uvicorn
 
+from . import qr
 from .__main__ import HOST, PORT, already_running
 
 INSTALL = "https://tailscale.com/download"
@@ -104,6 +105,9 @@ if __name__ == "__main__":
     print()
     print(f"  The app on the phone (Tailscale switched on):   {address}")
     print(f"  The app on this computer:                       http://localhost:{PORT}")
+    print()
+    print("  Or point the phone camera at this code:")
+    qr.print_code(address)
     print()
     print("The first time, open the address in Safari, allow the microphone and the position,")
     print("then Share, Add to Home Screen.")
