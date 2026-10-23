@@ -39,6 +39,12 @@ If a name is not heard exactly, the app asks: "Do you mean Rose?" Before you say
 
 **To do today.** The home screen has a block with the pills, the meals, and whatever else comes back every day or on some days of the week. Touch **Done** when a thing is done, or say it: "I took my pills." You can then ask at any time: "Did I take my pills?", "Have I had dinner?", "What do I still have to do?" The app answers with the time it was done. A thing that has a time and is not done is said aloud at that time, and once more half an hour later, while the app is open. To add one by voice: "Every day at 10, water the plants." or "Every Tuesday at 8, take out the bins."
 
+**Never from memory.** "Did I take my pills?" is answered from what was noted, never from what the person remembers. With no note, the app does not say "take them": it sends the person to the pill box ("Look at your pill box, at Friday morning. If the pills are still in it, take them now. If it is empty, you have already taken them."), and "The box is empty" notes them as taken. Once noted: "You do not need to take them again." With no note of a meal: "It is a good time to eat something." The app recognizes the pills, the meals, a drink and washing from the words of each thing.
+
+**Reminders when the app is closed.** Signed in, open **My day** and press **Remind me even when it is closed** (on an iPhone, from the icon on the home screen). The server then sends a notification at the time of each thing not done, and once more half an hour later. Touching it opens one big screen: **I took them** or **It is done**, and for the pills, the box to take them from. Pills more than an hour before their time are marked "It is not time yet". While the app is open, it reminds aloud by itself, with a **Done** button, and no notification is sent.
+
+**The relatives are told.** When the pills are not noted 45 minutes after their time, or a meal or a drink 2 hours after, the linked relatives get a notification ("Helen has not noted: Take the morning pills. Ask Helen to look at the pill box, at Friday morning..."). In their app they see the day of the person: what is done and when, what is not yet, and what is late.
+
 **Step by step.** For something with steps, such as a recipe, the app keeps your place. Say "I want to make an omelette", or open **Step by step** and choose. The app says what you need and the first step. Then:
 
 - "Done." or the button **Done, next step**: the next step is read aloud.

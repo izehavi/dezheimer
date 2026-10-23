@@ -1,8 +1,11 @@
 """Dezheimer server: serves the web app and the transcription API."""
 
+import asyncio
 import datetime as dt
 import json
+import logging
 import os
+import re
 import threading
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -15,7 +18,7 @@ from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
-from . import accounts, push, readings, recordings
+from . import accounts, push, readings, recordings, routine
 from .assistant import assist
 from .commands import parse_command
 from .intents import classifier
@@ -29,11 +32,26 @@ MAX_BODY_BYTES = MAX_SECONDS * MAX_SAMPLE_RATE * 4  # float32 samples
 transcriber = Transcriber()
 
 
+REMIND_EVERY_SECONDS = 30
+
+
+async def remind_forever():
+    """The reminders of the things of every day, and the relatives told (routine.py)."""
+    while True:
+        try:
+            await run_in_threadpool(routine.run)
+        except Exception:  # one bad turn must not stop the reminders for good
+            logging.getLogger(__name__).exception("the reminders failed this time")
+        await asyncio.sleep(REMIND_EVERY_SECONDS)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     transcriber.load_in_background()
     classifier.load_in_background()
+    reminding = asyncio.create_task(remind_forever())
     yield
+    reminding.cancel()
 
 
 app = FastAPI(title="Dezheimer", lifespan=lifespan)
@@ -408,6 +426,64 @@ async def alert_relatives(lost: Lost, request: Request):
 def get_alerts(request: Request):
     """For a relative: the alerts of the last day about the people they help."""
     return accounts.alerts_for(signed_in_user(request))
+
+
+# ---- The things to do every day: reminders when the app is closed (routine.py) ----
+
+DAY = r"^\d{4}-\d{2}-\d{2}$"
+
+
+class Task(BaseModel):
+    id: str = Field(max_length=100)
+    text: str = Field(max_length=200)
+    time: str = Field(default="", pattern=r"^(([01]\d|2[0-3]):[0-5]\d)?$")
+    days: list[int] = Field(default=[], max_length=7)
+    kind: str = Field(default="other", max_length=20)   # "pills", "meal", "drink", "hygiene" or "other"
+
+
+class Done(BaseModel):
+    task_id: str = Field(max_length=100)
+    day: str = Field(pattern=DAY)
+    at: float                                       # milliseconds since 1970
+    how: str | None = Field(default=None, max_length=20)   # "button", "voice", "box"
+
+
+class Routine(BaseModel):
+    name: str = Field(max_length=60)
+    tasks: list[Task] = Field(max_length=100)
+    done: list[Done] = Field(default=[], max_length=1000)
+    days: list[str] = Field(default=[], max_length=10)   # the days `done` covers
+    zone: str | None = Field(default=None, max_length=60)
+    offset: int = 0                                 # minutes ahead of UTC, if the zone is unknown
+
+
+@app.put("/api/account/routine")
+def save_routine(r: Routine, request: Request):
+    person_id = signed_in_user(request)
+    if any(not re.fullmatch(DAY, d) for d in r.days):
+        raise HTTPException(400, "A day must be written YYYY-MM-DD.")
+    accounts.set_routine(person_id, r.name, [t.model_dump() for t in r.tasks], r.zone, r.offset,
+                         [d.model_dump() for d in r.done], r.days)
+    accounts.seen(person_id)
+    return {}
+
+
+@app.post("/api/account/here")
+def here(request: Request):
+    """The app is open and showing: it reminds aloud by itself, no notification is needed."""
+    accounts.seen(signed_in_user(request))
+    return {}
+
+
+@app.get("/api/account/routines")
+def routines_of_people(request: Request):
+    """For a relative: the things of today of each person they help."""
+    found = []
+    for person in accounts.links(signed_in_user(request))["people"]:
+        kept = accounts.routine_of(person["id"])
+        if kept:
+            found.append({"person_id": person["id"], "name": person["name"], **routine.today_of(kept)})
+    return found
 
 
 # Registered last so that it does not shadow the API routes.

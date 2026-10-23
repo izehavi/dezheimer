@@ -744,3 +744,19 @@ button.button:disabled { opacity: 0.45; cursor: not-allowed; }
 .alert-box { margin-top: 12px; display: grid; gap: 6px; font-size: 1.1rem; }
 .alert-title { color: #A4262C; font-weight: 700; font-size: 1.3rem; }
 .alert-box .page-action { margin-top: 10px; }
+
+/* ---- One thing to do now, and the day seen by a relative (day.js, relatives.js) ---- */
+
+.now-card { margin-top: 20px; text-align: center; padding: 28px 22px; border-color: var(--accent); }
+.now-card.done { border-color: var(--line); }
+.now-title { font-size: 2rem; font-weight: 700; line-height: 1.2; margin-top: 6px; }
+.now-text { font-size: 1.3rem; margin-top: 12px; }
+.now-card .button.big { min-height: 76px; font-size: 1.4rem; width: 100%; }
+.now-card .page-action .button { width: 100%; }
+
+.helped-day { list-style: none; margin: 14px 0 0; padding: 0; display: grid; gap: 6px; }
+.helped-day li { display: flex; justify-content: space-between; gap: 12px; padding: 8px 12px; border-radius: 10px; background: var(--bg); }
+.helped-day li.yes strong { color: var(--accent); }
+.helped-day li.late { background: #FBE9E9; }
+.helped-day li.late strong { color: #A4262C; }
+.now-early { margin-top: 20px; border-color: #A4262C; background: #FBE9E9; color: #A4262C; font-weight: 700; font-size: 1.25rem; }

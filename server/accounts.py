@@ -58,6 +58,16 @@ def _db():
         CREATE TABLE IF NOT EXISTS alerts (
             id INTEGER PRIMARY KEY, person_id INTEGER NOT NULL, created REAL NOT NULL, lat REAL NOT NULL,
             lon REAL NOT NULL, accuracy REAL, street TEXT, title TEXT, place TEXT, start REAL, times INTEGER);
+        CREATE TABLE IF NOT EXISTS routines (
+            person_id INTEGER PRIMARY KEY, name TEXT NOT NULL, tasks TEXT NOT NULL, zone TEXT, offset INTEGER,
+            updated REAL NOT NULL);
+        CREATE TABLE IF NOT EXISTS done (
+            person_id INTEGER NOT NULL, task_id TEXT NOT NULL, day TEXT NOT NULL, at REAL NOT NULL, how TEXT,
+            PRIMARY KEY (person_id, task_id, day));
+        CREATE TABLE IF NOT EXISTS sent (
+            person_id INTEGER NOT NULL, task_id TEXT NOT NULL, day TEXT NOT NULL, what TEXT NOT NULL,
+            PRIMARY KEY (person_id, task_id, day, what));
+        CREATE TABLE IF NOT EXISTS presence (user_id INTEGER PRIMARY KEY, at REAL NOT NULL);
     """)
     try:
         with db:
@@ -285,3 +295,75 @@ def person_name(person_id):
         row = db.execute("SELECT person_name FROM links WHERE person_id = ? ORDER BY created DESC LIMIT 1",
                          (person_id,)).fetchone()
     return row[0] if row else None
+
+
+# ---- The things to do every day (routine.py) ----
+
+KEEP_DAYS = 8
+
+
+def set_routine(person_id, name, tasks, zone, offset, done, days):
+    """Keep the person's things to do each day, and what was done on `days` ("YYYY-MM-DD").
+
+    `done`: [{"task_id", "day", "at" (milliseconds since 1970), "how"}]. What is kept for
+    those days is replaced, so that "not done" on the phone is "not done" here too.
+    """
+    with _db() as db:
+        db.execute(
+            "INSERT INTO routines VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT(person_id) DO UPDATE SET "
+            "name = excluded.name, tasks = excluded.tasks, zone = excluded.zone, offset = excluded.offset, "
+            "updated = excluded.updated",
+            (person_id, name, json.dumps(tasks), zone, offset, time.time()),
+        )
+        for day in days:
+            db.execute("DELETE FROM done WHERE person_id = ? AND day = ?", (person_id, day))
+        db.executemany(
+            "INSERT OR REPLACE INTO done VALUES (?, ?, ?, ?, ?)",
+            [(person_id, d["task_id"], d["day"], d["at"], d.get("how")) for d in done if d["day"] in days],
+        )
+        # Only the last week is kept.
+        oldest = time.strftime("%Y-%m-%d", time.localtime(time.time() - KEEP_DAYS * 86400))
+        db.execute("DELETE FROM done WHERE person_id = ? AND day < ?", (person_id, oldest))
+        db.execute("DELETE FROM sent WHERE person_id = ? AND day < ?", (person_id, oldest))
+
+
+def routines():
+    with _db() as db:
+        rows = db.execute("SELECT person_id, name, tasks, zone, offset FROM routines").fetchall()
+    return [{"id": i, "name": n, "tasks": json.loads(t), "zone": z, "offset": o} for i, n, t, z, o in rows]
+
+
+def routine_of(person_id):
+    return next((r for r in routines() if r["id"] == person_id), None)
+
+
+def done_on(person_id, day):
+    """{task id: {"at", "how"}} for what was done on that day."""
+    with _db() as db:
+        rows = db.execute("SELECT task_id, at, how FROM done WHERE person_id = ? AND day = ?", (person_id, day)).fetchall()
+    return {t: {"at": a, "how": h} for t, a, h in rows}
+
+
+def sent_on(person_id, day):
+    with _db() as db:
+        rows = db.execute("SELECT task_id, what FROM sent WHERE person_id = ? AND day = ?", (person_id, day)).fetchall()
+    return set(rows)
+
+
+def claim(person_id, task_id, day, what):
+    """Note that a reminder is sent. False when it already was."""
+    with _db() as db:
+        cursor = db.execute("INSERT OR IGNORE INTO sent VALUES (?, ?, ?, ?)", (person_id, task_id, day, what))
+    return cursor.rowcount == 1
+
+
+def seen(user_id):
+    """The app of this user is open and showing."""
+    with _db() as db:
+        db.execute("INSERT OR REPLACE INTO presence VALUES (?, ?)", (user_id, time.time()))
+
+
+def seen_within(user_id, seconds):
+    with _db() as db:
+        row = db.execute("SELECT at FROM presence WHERE user_id = ?", (user_id,)).fetchone()
+    return bool(row) and time.time() - row[0] < seconds

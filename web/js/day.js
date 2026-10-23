@@ -10,7 +10,13 @@
 // - Good to know: things that do not change (the code of the building, where the keys are).
 //   They are the notes that "Remember that ..." adds, shown here all together.
 //
-// Everything is in the app: nothing here needs the server.
+// Everything works in the app alone. When the user is signed in, the things of the day
+// and what is done are also sent to the server (routine.js), which reminds when the app
+// is closed and tells the relatives when the pills or a meal are not noted.
+//
+// "Did I take my pills?" is never answered from the user's memory: from the note made at
+// the moment, or else, for the pills, from the pill box. A double dose is more dangerous
+// than a late one.
 const Day = (() => {
   const { tasks, ticks, notes, guides } = SampleData;
   const USUAL = [
@@ -30,6 +36,7 @@ const Day = (() => {
   const POCKET_MS = 10 * 60000;     // the check before leaving is forgotten after this long
   const STEPS_MS = 6 * 3600000;     // something step by step left alone this long is forgotten
   const STEPS_KEY = `dezheimer.${SampleData.profile() ? 'own.' : ''}steps`;
+  const EARLY_MS = 60 * 60000;     // more than this before its time, a thing is "not time yet"
   const WEEK = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
   let pocket = new Set();           // what was checked before leaving, this time
@@ -53,15 +60,33 @@ const Day = (() => {
   const at = (task, now) => { const d = new Date(now); d.setHours(0, minutesOf(task.time), 0, 0); return d; };
   const when = (task) => (task.days && task.days.length ? task.days.map((d) => WEEK[d]).join(', ') : 'every day');
 
+  // What kind of thing it is. The pills need the most care; a meal or a drink missed
+  // matters too (server/routine.py tells the relatives); the rest is only reminded.
+  const kindOf = (text) => (/\b(pills?|medicines?|medication|tablets?|capsules?|drops|insulin|inhaler)\b/i.test(text) ? 'pills'
+    : /\b(breakfast|lunch|dinner|supper|meal|eat|snack)\b/i.test(text) ? 'meal'
+      : /\bdrink\b|\bglass of water\b|\bcup of tea\b|\bhydrat/i.test(text) ? 'drink'
+        : /\b(shower|bath|wash|teeth|shave|toilet)\b/i.test(text) ? 'hygiene' : 'other');
+  const isPills = (task) => kindOf(task.text) === 'pills';
+
+  // The box of a pill box for a thing at its time: "Wednesday morning". The same parts
+  // of the day as the server's (routine.py).
+  const box = (task, date) => {
+    const hour = task.time ? Number(task.time.split(':')[0]) : 8;
+    return `${WEEK[date.getDay()]} ${hour < 11 ? 'morning' : hour < 15 ? 'midday' : hour < 20 ? 'evening' : 'night'}`;
+  };
+  // "Take the morning pills" -> "the morning pills"
+  const what = (task) => task.text.replace(/^take\s+/i, '').replace(/^\w/, (c) => c.toLowerCase());
+
   // The moment a thing was done on that day, or nothing.
   const doneAt = (task, day) => {
     const tick = ticks.find((k) => k.taskId === task.id && Dates.sameDay(k.at, day));
     return tick ? tick.at : null;
   };
 
-  const tick = (taskId) => {
+  // `how`: "button", "voice" or "box" (the pill box was found empty), for the relatives.
+  const tick = (taskId, how = 'button') => {
     const task = tasks.find((t) => t.id === taskId);
-    if (task && !doneAt(task, new Date())) SampleData.add('ticks', { taskId, at: new Date() });
+    if (task && !doneAt(task, new Date())) SampleData.add('ticks', { taskId, at: new Date(), how });
   };
 
   const untick = (taskId) => {
@@ -219,6 +244,17 @@ const Day = (() => {
       };
     }
 
+    // "The box is empty": the pills were taken, even if nothing was noted.
+    if (/\b(box|compartment|pill ?box|dosette)\b.*\bempty\b|\bempty\b.*\b(box|compartment)\b/.test(t)) {
+      const open = today(now).filter((x) => isPills(x) && !doneAt(x, now) && (!x.time || at(x, now) - now < 30 * 60000));
+      const task = open[open.length - 1];
+      if (!task) return { say: 'Your pills of today are already noted.', ...DAY_LINK };
+      return {
+        say: `The box of ${box(task, now)} is empty: you have taken ${what(task)}.`, ...DAY_LINK,
+        ask: { question: 'Shall I note it?', apply: () => { tick(task.id, 'box'); }, done: 'Done. It is noted.' },
+      };
+    }
+
     // Another day than today is a question for the agenda or the diary.
     if (/\b(yesterday|tomorrow|monday|tuesday|wednesday|thursday|friday|saturday|sunday|last|next)\b/.test(t)) return null;
 
@@ -236,15 +272,29 @@ const Day = (() => {
     const task = meant(text, now, asking);
     if (!task) return null;
     const done = doneAt(task, now);
-    if (asking) {
-      return { say: done ? `Yes. ${task.text}: done at ${Speech.time(done)}.`
-        : `Not yet. ${task.text}${task.time ? `, planned at ${Speech.time(at(task, now))}` : ''}.`, ...DAY_LINK };
-    }
-    if (done) return { say: `${task.text}: it is already noted, at ${Speech.time(done)}.`, ...DAY_LINK };
+    if (asking) return { say: answer(task, now), ...DAY_LINK };
+    if (done) return { say: `${task.text}: it is already noted, at ${Speech.time(done)}.${isPills(task) ? ' Do not take them again.' : ''}`, ...DAY_LINK };
+    // Pills taken long before their time are noted, but said: the relatives will see it.
+    const early = isPills(task) && task.time && at(task, now) - now > EARLY_MS;
     return {
-      say: `${task.text}.`, ...DAY_LINK,
-      ask: { question: 'Shall I note that it is done?', apply: () => { tick(task.id); }, done: 'Done. It is noted.' },
+      say: `${task.text}.${early ? ` These are the pills of ${Speech.time(at(task, now))}, not of now.` : ''}`, ...DAY_LINK,
+      ask: { question: 'Shall I note that it is done?', apply: () => { tick(task.id, 'voice'); }, done: 'Done. It is noted.' },
     };
+  };
+
+  // "Did I take my pills?", "Have I had lunch?": from the note, never from memory.
+  const answer = (task, now) => {
+    const done = doneAt(task, now);
+    if (done) return `Yes. ${task.text}: done at ${Speech.time(done)}.${isPills(task) ? ' You do not need to take them again.' : ''}`;
+    const time = task.time ? at(task, now) : null;
+    if (time && time > now) return `Not yet. ${task.text}: planned at ${Speech.time(time)}.`;
+    const kind = kindOf(task.text);
+    if (kind === 'pills') {
+      return `I have no note of it. Look at your pill box, at ${box(task, now)}. If the pills are still in it, take them now, then tell me. If it is empty, you have already taken them.`;
+    }
+    if (kind === 'meal') return `I have no note of ${what(task)}. It is a good time to eat something. Tell me when you have eaten.`;
+    if (kind === 'drink') return 'I have no note of it. Have a glass of water now: it does no harm.';
+    return `Not noted yet. ${task.text}${time ? `, planned at ${Speech.time(time)}` : ''}.`;
   };
 
   // ---- Reminders ----
@@ -257,7 +307,8 @@ const Day = (() => {
       const lead = late >= 0 && late < 3 ? 0 : late >= 30 && late < 33 ? 30 : null;
       const key = `${task.id}:${Dates.key(now)}:${lead}`;
       if (lead === null || said.has(key)) continue;
-      return { key, text: `${SampleData.user.name}, ${lead ? 'a small reminder' : 'it is time'}: ${task.text}.` };
+      const where = isPills(task) ? ` They are in the box: ${box(task, now)}.` : '';
+      return { key, taskId: task.id, text: `${SampleData.user.name}, ${lead ? 'a small reminder' : 'it is time'}: ${task.text}.${where}` };
     }
     return null;
   };
@@ -405,7 +456,31 @@ const Day = (() => {
       <p class="page-action"><button class="button" type="button" data-steps="end">Stop</button></p>`;
   };
 
-  const view = ({ now, arg }) => (arg === 'steps' ? stepsView() : `
+  // The screen a notification opens: one thing to do now, and one big button.
+  const nowView = (taskId, now) => {
+    const task = tasks.find((t) => t.id === taskId);
+    if (!task) return '<a class="back" href="#/">← Back</a><p class="empty">This is no longer in your day.</p>';
+    const done = doneAt(task, now);
+    const pills = isPills(task);
+    const early = task.time && at(task, now) - now > EARLY_MS;
+    return `
+      <a class="back" href="#/">← Back</a>
+      ${!done && early ? `<p class="card now-early">It is not time yet: this is for ${esc(Dates.time(at(task, now)))}.${pills ? ' Do not take these pills now.' : ''}</p>` : ''}
+      <div class="card now-card${done ? ' done' : ''}">
+        ${done ? `
+          <p class="now-title">✓ ${esc(task.text)}</p>
+          <p class="now-text">Done at ${esc(Dates.time(done))}.${pills ? ' You do not need to take them again.' : ''}</p>
+          <p class="page-action"><a class="button primary big" href="#/">Back to today</a></p>` : `
+          <p class="hello-date">${task.time ? `At ${esc(Dates.time(at(task, now)))}` : 'Today'}</p>
+          <p class="now-title">${esc(task.text)}</p>
+          ${pills ? `<p class="now-text">Take them from your pill box: <strong>${esc(box(task, now))}</strong>.</p>` : ''}
+          <p class="page-action"><button class="button${early ? '' : ' primary big'}" type="button" data-now-done="${esc(task.id)}">${pills ? 'I took them' : 'It is done'}</button></p>
+          ${pills ? `<p class="page-action"><button class="button" type="button" data-now-box="${esc(task.id)}">The box is already empty</button></p>` : ''}
+          <p class="page-action"><a class="button" href="#/">Not now</a></p>`}
+      </div>`;
+  };
+
+  const view = ({ now, arg, more }) => (arg === 'now' ? nowView(more, now) : arg === 'steps' ? stepsView() : `
     <a class="back" href="#/">← Back</a>
     <header class="page-head with-back">
       <h1>My day</h1>
@@ -418,6 +493,8 @@ const Day = (() => {
       ${todayList(now)}
       ${guides.length ? '<p class="day-links"><a class="button" href="#/day/steps">Do something step by step</a></p>' : ''}
     </section>
+
+    ${Routine.pushCard()}
 
     <section>
       <h2>Before I leave home</h2>
@@ -489,6 +566,8 @@ const Day = (() => {
     screen.addEventListener('click', (e) => {
       const hit = (name) => e.target.closest(`[data-${name}]`);
       if (hit('tick')) tick(hit('tick').dataset.tick);
+      else if (hit('now-done')) { tick(hit('now-done').dataset.nowDone, 'button'); Speech.say('Good. It is noted.'); }
+      else if (hit('now-box')) { tick(hit('now-box').dataset.nowBox, 'box'); Speech.say('Then you have already taken them. It is noted.'); }
       else if (hit('untick')) untick(hit('untick').dataset.untick);
       else if (hit('pocket')) {
         const id = hit('pocket').dataset.pocket;
@@ -537,5 +616,8 @@ const Day = (() => {
     });
   };
 
-  return { view, homeBlock, start, understand, tick, due };
+  // From the reminder: done, and the screen shows it.
+  const markDone = (taskId) => { tick(taskId, 'button'); refresh(); };
+
+  return { view, homeBlock, start, understand, tick, markDone, due, kindOf, today, doneAt };
 })();

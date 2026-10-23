@@ -238,7 +238,7 @@ const SampleData = (() => {
   const base = Object.fromEntries(Object.entries(lists).map(([kind, list]) => [kind, [...list]]));
   let hidden = [];              // ids of example events the user cancelled or moved
   let edits = {};               // what the user changed about a person: { personId: { relationship, ... } }
-  let onChange = () => {};      // called after every change, for the backup
+  const listeners = [];         // called after every change: the backup, the reminders of the server
 
   // Dates are saved as text.
   const revive = (kind, item) => {
@@ -276,7 +276,7 @@ const SampleData = (() => {
     } catch { /* storage unavailable: the changes last until the page is closed */ }
   };
 
-  const changed = () => { saveLocal(); onChange(); };
+  const changed = () => { saveLocal(); listeners.forEach((listener) => listener()); };
 
   try {
     const doc = {
@@ -361,6 +361,6 @@ const SampleData = (() => {
       importAdded(doc);
       saveLocal();
     },
-    onChange: (listener) => { onChange = listener; },
+    onChange: (listener) => { listeners.push(listener); },
   };
 })();

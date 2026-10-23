@@ -77,6 +77,11 @@ There is also no screen for relatives yet, which supervision needs.
 
 The project owner picks which needs the app can address, and they are then ordered from the easiest to address to the hardest.
 
+Addressed so far, in a first version:
+
+- **Getting lost** (need 1), 2026-10-21: "Take me there", the way watched, help when lost, the relatives told.
+- **Medication errors** (need 2) and **eating, drinking, hygiene** (need 6), 2026-10-23. Of the ways to know whether a thing is done (asking afterwards, a note at the moment, a pill box, a photo, the relatives told, sensors at home, a locking pill dispenser, a camera), the project owner chose three: **a note at the moment** (a reminder that works when the app is closed, and one big button), **the pill box** as the answer when nothing was noted, and **the relatives told** when the pills are not noted after 45 minutes, a meal or a drink after 2 hours.
+
 ## Sources
 
 - [CANE study of unmet needs of people with dementia at home (BMC Health Services Research)](https://discovery-pp.ucl.ac.uk/id/eprint/1388602/1/1472-6963-13-43.pdf)

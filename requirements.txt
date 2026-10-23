@@ -7,3 +7,5 @@ uvicorn==0.54.0
 numpy==2.5.3
 # Only for start-phone.bat: makes the certificate of the secure address.
 cryptography==50.0.2
+# The time zones, for reminders at the person's own time (Windows has none for Python).
+tzdata==2026.5

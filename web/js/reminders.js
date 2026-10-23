@@ -53,11 +53,20 @@ const Reminders = (() => {
     const go = document.getElementById('reminder-go');
     go.hidden = !(reminder.event && reminder.event.lat);
     if (reminder.event) go.href = `#/walk/${reminder.event.id}`;
+    // A thing of the day: noted as done at once, at the moment it is done (day.js).
+    const done = document.getElementById('reminder-done');
+    done.hidden = !reminder.taskId;
+    done.dataset.task = reminder.taskId || '';
     banner.hidden = false;
     Speech.say(text);
   };
 
   const start = () => {
+    document.getElementById('reminder-done').addEventListener('click', (e) => {
+      document.getElementById('reminder').hidden = true;
+      Day.markDone(e.currentTarget.dataset.task);
+      Speech.say('Good. It is noted.');
+    });
     document.getElementById('reminder-go').addEventListener('click', () => {
       document.getElementById('reminder').hidden = true;
       Speech.stop();

@@ -17,6 +17,7 @@ const Relatives = (() => {
   let links = null;          // { helpers: [{ id, name }], people: [{ id, name }] }, once loaded
   let code = null;           // { code, expires } shown to the person
   let alerts = [];           // on a relative's phone: the alerts of the last day, the latest first
+  let days = [];             // on a relative's phone: the things of today of each person (server/routine.py)
   let notifications = null;  // on a relative's phone: 'on', 'off', 'denied', 'unsupported' or 'error'
   const CHECK_EVERY_MS = 30000;
   let message = '';
@@ -42,6 +43,8 @@ const Relatives = (() => {
     if (res.ok) links = res.data;
     if (role === 'helper') {
       alerts = (await Alerts.latest()) || alerts;
+      const routines = await Account.api('GET', 'routines');
+      if (routines.ok) days = routines.data;
       if (notifications !== 'error') notifications = await Alerts.state();
     }
   };
@@ -104,6 +107,22 @@ const Relatives = (() => {
       </div>`;
   };
 
+  const HOW = { box: 'the pill box was empty', voice: 'said', button: 'noted' };
+
+  // The things of today of a person: done, not yet, or late.
+  const dayList = (day) => {
+    if (!day || !day.tasks.length) return '';
+    return `
+      <ul class="helped-day">
+        ${day.tasks.map((t) => {
+          const state = t.done ? `✓ ${Dates.time(new Date(t.done.at))}${t.done.how === 'box' ? `, ${HOW.box}` : ''}`
+            : t.late ? 'Not noted' : 'Not yet';
+          return `<li class="${t.done ? 'yes' : t.late ? 'late' : ''}">
+            <span>${t.time ? `${esc(t.time)} · ` : ''}${esc(t.text)}</span><strong>${esc(state)}</strong></li>`;
+        }).join('')}
+      </ul>`;
+  };
+
   const peopleList = () => {
     if (!links) return '<p class="empty">Loading…</p>';
     if (!links.people.length) return '<p class="empty">You are not linked to anyone yet.</p>';
@@ -113,6 +132,7 @@ const Relatives = (() => {
       <article class="card helped${last ? ' alerted' : ''}">
         <h3>${esc(p.name)}</h3>
         ${last ? alertCard(last) : `<p class="source">No alert in the last day. You will be told if ${esc(p.name)} seems lost on the way somewhere.</p>`}
+        ${dayList(days.find((d) => d.person_id === p.id))}
         <button class="link-button" type="button" data-unlink="${p.id}" data-name="${esc(p.name)}">Remove this link</button>
       </article>`;
     }).join('');
