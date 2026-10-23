@@ -16,7 +16,7 @@ const SampleData = (() => {
   // `photo` is an optional image URL; without it the app shows the initials.
   const people = [
     {
-      id: 'sarah', name: 'Sarah', relationship: 'Your daughter', color: '#0F5E63', photo: null,
+      id: 'sarah', name: 'Sarah', relationship: 'Your daughter', color: '#5B6249', photo: null,
       // `link` is the short label on the connections graph; `origin` is how the user knows them.
       link: 'daughter',
       origin: 'She is your daughter, your first child.',
@@ -27,7 +27,7 @@ const SampleData = (() => {
       ],
     },
     {
-      id: 'david', name: 'David', relationship: 'Your son', color: '#3B4BA3', photo: null,
+      id: 'david', name: 'David', relationship: 'Your son', color: '#4F6375', photo: null,
       link: 'son',
       origin: 'He is your son, two years younger than Sarah.',
       facts: [
@@ -37,7 +37,7 @@ const SampleData = (() => {
       ],
     },
     {
-      id: 'leo', name: 'Leo', relationship: 'Your grandson', color: '#8A4B08', photo: null,
+      id: 'leo', name: 'Leo', relationship: 'Your grandson', color: '#85633A', photo: null,
       link: 'grandson',
       origin: "He is Sarah's son, and your first grandchild.",
       facts: [
@@ -47,7 +47,7 @@ const SampleData = (() => {
       ],
     },
     {
-      id: 'emma', name: 'Emma', relationship: 'Your granddaughter', color: '#A3285A', photo: null,
+      id: 'emma', name: 'Emma', relationship: 'Your granddaughter', color: '#8C5A63', photo: null,
       link: 'granddaughter',
       origin: "She is Sarah's daughter, and Leo's little sister.",
       facts: [
@@ -57,7 +57,7 @@ const SampleData = (() => {
       ],
     },
     {
-      id: 'rose', name: 'Rose', relationship: 'Your friend and neighbour', color: '#6B3FA0', photo: null,
+      id: 'rose', name: 'Rose', relationship: 'Your friend and neighbour', color: '#6C5E7E', photo: null,
       link: 'friend, neighbour',
       origin: 'You met in 1995, when you moved into the street. She was the first neighbour to welcome you.',
       facts: [
@@ -67,7 +67,7 @@ const SampleData = (() => {
       ],
     },
     {
-      id: 'paul', name: 'Paul', relationship: 'Your friend', color: '#2F6B2F', photo: null,
+      id: 'paul', name: 'Paul', relationship: 'Your friend', color: '#5A7050', photo: null,
       link: 'friend, former colleague',
       origin: 'You met at Jules Ferry school, where you both taught for twenty years.',
       facts: [
@@ -77,7 +77,7 @@ const SampleData = (() => {
       ],
     },
     {
-      id: 'martin', name: 'Dr. Martin', relationship: 'Your doctor', color: '#1D5C8C', photo: null,
+      id: 'martin', name: 'Dr. Martin', relationship: 'Your doctor', color: '#4E6B73', photo: null,
       link: 'doctor',
       origin: 'He has been your family doctor since 2010. Sarah found him for you.',
       facts: [
@@ -87,7 +87,7 @@ const SampleData = (() => {
       ],
     },
     {
-      id: 'nadia', name: 'Nadia', relationship: 'Your home helper', color: '#9C3D2B', photo: null,
+      id: 'nadia', name: 'Nadia', relationship: 'Your home helper', color: '#9A5B43', photo: null,
       link: 'home helper',
       origin: 'She started helping you at home last year. Sarah arranged it with the home help service.',
       facts: [

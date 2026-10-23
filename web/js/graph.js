@@ -5,9 +5,9 @@ const Graph = (() => {
   const SIZE = 800, CENTER = SIZE / 2, RADIUS = 280, NODE = 46;
 
   const GROUPS = [
-    { id: 'family', label: 'Family', color: '#0F5E63' },
-    { id: 'friends', label: 'Friends', color: '#6B3FA0' },
-    { id: 'care', label: 'Care and help', color: '#1D5C8C' },
+    { id: 'family', label: 'Family', color: '#5B6249' },
+    { id: 'friends', label: 'Friends', color: '#6C5E7E' },
+    { id: 'care', label: 'Care and help', color: '#4E6B73' },
   ];
   const FAMILY = /\b(daughter|son|grand\w+|wife|husband|sister|brother|mother|father|mum|dad|niece|nephew|cousin|aunt|uncle|in-law|child|partner|fianc\w+|boyfriend|girlfriend)\b/i;
   const CARE = /\b(doctor|nurse|helper|carer|caregiver|physio\w*|dentist|pharmacist|therapist|optician|aide)\b/i;

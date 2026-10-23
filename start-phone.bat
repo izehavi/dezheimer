@@ -1,5 +1,5 @@
 @echo off
-rem Starts Dezheimer for this computer AND for a phone on the same Wi-Fi.
+rem Starts Near for this computer AND for a phone on the same Wi-Fi.
 rem The window shows the address to open on the phone and the code it asks for.
 set "VENV=%USERPROFILE%\.venvs\dezheimer"
 cd /d "%~dp0"

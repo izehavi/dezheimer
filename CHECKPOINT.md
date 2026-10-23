@@ -1,4 +1,4 @@
-# Dezheimer — Checkpoint
+# Near — Checkpoint
 
 Where the project stands. Updated at the end of each work session or milestone. The plan itself is in [GUIDELINE.md](GUIDELINE.md).
 
@@ -228,7 +228,7 @@ To make a request more robust, add example sentences to `EXAMPLES` in [server/in
 - The kind of a thing (pills, meal, drink, washing) is read from its words, in English. "Take my Doliprane" is not seen as pills.
 - If the server is off at the time of a reminder, the reminder is not sent later than 10 minutes, and the relatives not later than an hour.
 
-- Take me there: the position is only watched while Dezheimer is on the screen. A locked phone, or Google Maps in front, watches nothing, and nobody is told. Only a real phone app can watch in the background (guideline, section 7, step 3).
+- Take me there: the position is only watched while Near is on the screen. A locked phone, or Google Maps in front, watches nothing, and nobody is told. Only a real phone app can watch in the background (guideline, section 7, step 3).
 - Take me there: only for an event whose place was found on the map, closer than 5 km, on foot. The way and the street come from a free service with no guarantee (routing.openstreetmap.de) and need the internet. The example events of Helen have no place on the map.
 - Off the way means more than 60 metres from it for 30 seconds; a position less precise than 50 metres is not used. These numbers are guesses, to be set on real walks.
 - An alert reaches a relative only when the person is signed in and linked, and when the relative's notifications are on or the relative opens the app. The person is only told "I have told..." when a notification was taken.
@@ -273,7 +273,7 @@ To make a request more robust, add example sentences to `EXAMPLES` in [server/in
 For the project owner:
 
 0. **Try the pills and meals for a few days on two real phones**: on the person's phone, your own list, signed in, "Remind me even when it is closed" from the home-screen icon; on the relative's phone, notifications on. Leave one pill time not noted and see the relative told after 45 minutes.
-0. **Try getting lost on two real phones, outside.** The person's phone with `start-anywhere.bat`, an event with a real place, "Take me there", walk off the way, then "I am lost". On the relative's phone, add Dezheimer to the home screen and switch notifications on. Note what was too slow, too much, or unclear.
+0. **Try getting lost on two real phones, outside.** The person's phone with `start-anywhere.bat`, an event with a real place, "Take me there", walk off the way, then "I am lost". On the relative's phone, add Near to the home screen and switch notifications on. Note what was too slow, too much, or unclear.
 1. **A third round of practice**, over several days, on the iPhone, with your own data and "Keep the sound of my voice" switched on. At home `start-phone.bat` is enough. To practise away from home, install Tailscale on the computer and the phone and try `start-anywhere.bat`.
 2. **Try "My day" for a few days**, by voice, with your own lists and one real recipe. What will most likely need work: the words it understands, and listening hands-free while cooking.
 3. **More sound for the speech model.** Read the three texts again on different days ("Teach the app my voice"), then run `dataset.bat`. The first reading gave 7.5 minutes; one to two hours are needed. The requests said every day with the switch on count too.
@@ -313,12 +313,13 @@ Then, in the code:
 | 2026-10-10 | The sound of a request is kept only when the user switches it on, only for the assistant, and outside the project folder. | It is needed to measure the speech model on a real voice. The Listen tab hears other people, who have not agreed. The project folder is synced to OneDrive. |
 | 2026-10-21 | The needs are ordered from the most disabling to the least ([NEEDS.md](NEEDS.md)); the people memos are no longer the priority. Getting lost comes first. | Decided by the project owner, from the research. |
 | 2026-10-21 | The way is shown on the app's own map (Leaflet, OpenStreetMap), with Google Maps as a button only. | Chosen by the project owner: a web app cannot watch the position while Google Maps is in front. |
-| 2026-10-21 | The relatives are told by a notification in their own Dezheimer app (Web Push), sent by our server. | Chosen by the project owner, over email or a third-party notification app. The push service of Apple or Google carries the message encrypted. |
+| 2026-10-21 | The relatives are told by a notification in their own Near app (Web Push), sent by our server. | Chosen by the project owner, over email or a third-party notification app. The push service of Apple or Google carries the message encrypted. |
 | 2026-10-21 | The relatives are told from the second time the person is lost on the same walk, and each time after. | The project owner's rule: "if the person gets lost many times". Once can be a detour. |
 | 2026-10-23 | Knowing whether a thing is done: a note at the moment, the pill box when nothing was noted, the relatives told. Not asked afterwards, no photo, sensor, dispenser or camera for now. | Chosen by the project owner from eight options: the person's memory cannot answer, and these three need no hardware but a pill box. |
 | 2026-10-23 | With no note, the pills are never "take them": the pill box decides. A meal or a drink with no note: "eat something", "have a glass of water". | A double dose is dangerous; a second meal or glass of water is not. |
 | 2026-10-23 | The relatives are told after 45 minutes for the pills, 2 hours for a meal or a drink; nothing for washing and the rest. | Proposed and accepted. Washing is a matter of dignity: the relative sees it over the week, not each day. |
 | 2026-10-23 | The reminders when the app is closed come from our server, by the same Web Push as the alerts; the server keeps the list of things of every day and what is done, not the rest of the backup. | It is the only way a web app can remind when closed. Keeping only this list, apart, still works once the backup is encrypted. |
+| 2026-10-23 | The app is called **Near**, with its logo and a new look: old paper, sage and beige, Atkinson Hyperlegible Next, rounded shapes, line icons instead of emoji. The code, the folders and the stored keys keep the name dezheimer. | Asked by the project owner, with the logo and the art direction. Renaming the stored keys would lose what is already saved on the phones. |
 | 2026-10-07 | Everything the app is about to write down must be confirmed first. | A wrong memory is worse than no memory (guideline, principle 2). |
 | 2026-10-07 | Voice requests are understood with a small sentence model and rules, not with a language model. | It is fast (about 50 ms), small enough for a phone, and predictable. The project owner asked for requests to work by meaning, on a phone, locally. |
 | 2026-10-07 | Voice first: the main button of the home screen is the microphone. | Asked by the project owner, for ease of use by an older person. |
@@ -351,4 +352,5 @@ Then, in the code:
 - **2026-10-10** — The app speaks with an English voice of the device, and says so when there is none.
 - **2026-10-12** — Checkpoint brought up to date. Nothing new was built or recorded since 2026-10-10; the 92 tests pass.
 - **2026-10-21** — The needs of a person with Alzheimer's, ordered ([NEEDS.md](NEEDS.md)). Who uses this phone, and links between the person and relatives. Take me there: the walking way to an event, watched; help when lost. Alerts to the relatives' phones by Web Push. 108 tests pass.
+- **2026-10-23** — The app is called Near: the logo on the home screen of the phone and in the app, and a warm, calm look (old paper, sage and beige, a font made for low vision, line icons).
 - **2026-10-23** — Pills, meals, drinks and washing: reminders when the app is closed, sent by the server; a screen with one big button; answers from the note or the pill box; the relatives told and shown the day. 125 tests pass.

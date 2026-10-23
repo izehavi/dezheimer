@@ -1,5 +1,5 @@
 @echo off
-rem Starts Dezheimer for this computer AND for a phone anywhere, through Tailscale.
+rem Starts Near for this computer AND for a phone anywhere, through Tailscale.
 rem The window shows the address to open on the phone.
 set "VENV=%USERPROFILE%\.venvs\dezheimer"
 cd /d "%~dp0"

@@ -83,7 +83,7 @@ const Mic = (() => {
     if (!usable()) {
       h.onError?.(location.protocol === 'http:' && !/^(localhost|127\.)/.test(location.hostname)
         ? 'The microphone only works on the secure address, the one that starts with https.'
-        : `The microphone needs the Dezheimer server. Double-click start.bat, then open ${APP_URL}`);
+        : `The microphone needs the Near server. Double-click start.bat, then open ${APP_URL}`);
       return false;
     }
     try {
@@ -239,7 +239,7 @@ const Mic = (() => {
       })
       .catch((err) => h.onError?.(
         err instanceof TypeError
-          ? 'The Dezheimer server stopped answering. Check that its black window is still open on the computer, and that this device can reach it.'
+          ? 'The Near server stopped answering. Check that its black window is still open on the computer, and that this device can reach it.'
           : `Could not write down the last phrase: ${err.message}`))
       .finally(() => { pending -= 1; });
   };

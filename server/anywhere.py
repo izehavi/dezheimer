@@ -73,12 +73,12 @@ def stay_awake() -> None:
 
 if __name__ == "__main__":
     if already_running():
-        print("Dezheimer is already running in another window. Close that window, then start this again.")
+        print("Near is already running in another window. Close that window, then start this again.")
         raise SystemExit(1)
 
     exe = tailscale()
     if not exe:
-        print("To reach this computer from anywhere, Dezheimer uses Tailscale, which is not installed yet.")
+        print("To reach this computer from anywhere, Near uses Tailscale, which is not installed yet.")
         print(f"  1. On this computer: install it from {INSTALL} and sign in.")
         print("  2. On the phone: install the Tailscale app and sign in with the same account.")
         print("  3. Start this again.")
@@ -99,7 +99,7 @@ if __name__ == "__main__":
 
     stay_awake()
     address = f"https://{name}"
-    print("Dezheimer is starting, for this computer and for your phone, anywhere.")
+    print("Near is starting, for this computer and for your phone, anywhere.")
     print("Keep this window open, and the computer switched on and plugged in. Close the window to stop.")
     print()
     print(f"  The app on the phone (Tailscale switched on):   {address}")

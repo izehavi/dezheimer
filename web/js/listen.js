@@ -55,7 +55,7 @@ const Listen = (() => {
 
     const on = listening();
     const stats = Mic.stats;
-    button.textContent = on ? '■  Switch off the microphone' : '🎤  Switch on the microphone';
+    button.innerHTML = on ? 'Switch off the microphone' : `${Icons.icon('mic')} Switch on the microphone`;
     button.classList.toggle('on', on);
     button.disabled = !Mic.usable();
     if (statusIsHtml) $('listen-status').innerHTML = status;
@@ -110,7 +110,7 @@ const Listen = (() => {
         setTimeout(() => { if ($('mic-button') && !listening()) checkServer(); }, 2000);
       } else setStatus(`Ready. Model: ${health.model}, running on ${health.device === 'cuda' ? 'the graphics card' : 'the processor'}.`);
     } catch {
-      setStatus('The Dezheimer server is not answering. Double-click start.bat in the project folder.', true);
+      setStatus('The Near server is not answering. Double-click start.bat in the project folder.', true);
     }
   };
 

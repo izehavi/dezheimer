@@ -5,7 +5,7 @@
 // Anything that would be written down is first read back and confirmed by "yes".
 const Assistant = (() => {
   const SILENCE_MS = 9000;       // the microphone goes off when nobody speaks for this long
-  const COLORS = ['#7A3E9D', '#1F6F8B', '#A64B2A', '#3F7D3A', '#8C2F5B', '#4A5FA8', '#8A6A00'];
+  const COLORS = ['#6C5E7E', '#4E6B73', '#9A5B43', '#5A7050', '#8C5A63', '#4F6375', '#85633A'];
 
   let phase = 'idle';            // 'idle' | 'listening' | 'thinking' | 'speaking'
   let live = '';                 // what is being heard right now
@@ -742,7 +742,7 @@ const Assistant = (() => {
 
     box.innerHTML = `
       <button id="talk" class="talk ${phase}" type="button" aria-label="${LABELS[phase]}">
-        <span class="talk-icon" aria-hidden="true">${phase === 'speaking' ? '🔊' : '🎤'}</span>
+        ${Icons.icon(phase === 'speaking' ? 'speaker' : 'mic', 'talk-icon')}
       </button>
       <p class="talk-label">${LABELS[phase]}</p>
       ${phase === 'idle' && !log.length ? '<p class="talk-hint">Tap the button, then ask or tell me something.</p>' : ''}
@@ -811,7 +811,7 @@ const Assistant = (() => {
         <label class="improve-switch">
           <input id="keep-switch" type="checkbox"${keepSound ? ' checked' : ''}>
           Keep the sound of my voice when I talk to the app, to measure how well it hears me.
-          It stays on the computer that runs Dezheimer.
+          It stays on the computer that runs Near.
         </label>
         ${Places.town() ? `
           <p class="source">Places are looked for around ${esc(Places.town().name)} when this device does not give its position.

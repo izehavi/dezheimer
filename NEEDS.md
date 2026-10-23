@@ -1,4 +1,4 @@
-# Dezheimer — Needs of a person with Alzheimer's
+# Near — Needs of a person with Alzheimer's
 
 What a person living with Alzheimer's at home most needs help with, ordered from the most disabling to the least, and the constraints any tool for them must respect. The people memos are no longer the priority; this document is the base for choosing what to build next.
 

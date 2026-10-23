@@ -1,8 +1,14 @@
-# Dezheimer
+# Near
 
-An external memory for people living with Alzheimer's disease.
+<img src="web/near-logo.png" alt="Near" width="160">
 
-Dezheimer listens to daily life, writes down what happened, and turns it into three things the person can come back to at any time: an agenda, a memo for each family member and friend, and a personal diary. The goal is to make everyday life and social relationships easier when memory is no longer reliable.
+A calm companion for people living with Alzheimer's disease, and for the relatives who help them.
+
+Near was first called Dezheimer: the repository, the folders on the computer (`%USERPROFILE%\.dezheimer`) and the code still use that name, so that nothing already saved is lost.
+
+**Look and feel.** Warm, simple and reassuring, for older eyes and hands: the cream of old paper, the sage green and warm beige of the logo, large text in Atkinson Hyperlegible Next (a font made by the Braille Institute for readers with low vision, kept in the app), rounded shapes, generous space, simple line icons. Never clinical, childish or busy.
+
+Near listens to daily life, writes down what happened, and turns it into three things the person can come back to at any time: an agenda, a memo for each family member and friend, and a personal diary. The goal is to make everyday life and social relationships easier when memory is no longer reliable.
 
 > **Status:** first version of the whole chain, on example data: a voice assistant that adds events, people, connections and memos and answers questions aloud; spoken reminders; a connections map; and a language model that proposes diary summaries and memos from a recorded conversation. The assistant has been used by voice on a computer and on an iPhone, by the developer only; misheard words are its main weakness. The language model still misses about half of the news. See [CHECKPOINT.md](CHECKPOINT.md) for where we are and [GUIDELINE.md](GUIDELINE.md) for the full plan.
 
@@ -69,7 +75,7 @@ An event whose place was found on the map has a **Take me there** button, in the
 
 While the app is open, it watches the way. When you are off the way for 30 seconds, or when you press **I am lost**, it says calmly where you are going, the time of the event and the street you are on, finds the way again from where you are, and shows it. When you arrive, it says so. The walk is kept if the app is closed, for six hours.
 
-Keep Dezheimer open on the screen during the walk: a web app only gets the position while it is showing, so nothing is watched when the phone is locked or when Google Maps is in front (**Open in Google Maps** is there for whoever prefers it). The screen is kept on. Places further than 5 km are not walked to: the app says to ask someone to drive, or to take a taxi. The way is found by an open routing service built on OpenStreetMap (routing.openstreetmap.de), to which the position of the start and of the place are sent.
+Keep Near open on the screen during the walk: a web app only gets the position while it is showing, so nothing is watched when the phone is locked or when Google Maps is in front (**Open in Google Maps** is there for whoever prefers it). The screen is kept on. Places further than 5 km are not walked to: the app says to ask someone to drive, or to take a taxi. The way is found by an open routing service built on OpenStreetMap (routing.openstreetmap.de), to which the position of the start and of the place are sent.
 
 ### For a relative
 
@@ -79,16 +85,16 @@ To link a relative, both need an account (**Account** at the bottom of the scree
 
 **Alerts.** When the person is lost a second time on the same walk (see "Take me there"), and each time after, the app tells the linked relatives: where the person is, the street, and where they were going. The person hears "I have told Sarah where you are." The relative's app shows the latest alert of the day for each person, with **See where on the map**, and looks for new ones every 30 seconds while it is open. To be told when the app is closed, press **Turn on notifications** on the relative's phone. On an iPhone this only works from the icon on the home screen (Safari, Share, "Add to Home Screen", iOS 16.4 or later), not in Safari itself.
 
-The notification goes from the computer that runs Dezheimer to the push service of the phone's maker (Apple or Google), encrypted so that this service cannot read it. The relative's phone must reach that computer once, to be linked and to switch notifications on: on the same Wi-Fi, or through Tailscale (`start-anywhere.bat`), where the owner of the computer shares it with the relative's own Tailscale account (in the Tailscale admin console, **Share** on the computer).
+The notification goes from the computer that runs Near to the push service of the phone's maker (Apple or Google), encrypted so that this service cannot read it. The relative's phone must reach that computer once, to be linked and to switch notifications on: on the same Wi-Fi, or through Tailscale (`start-anywhere.bat`), where the owner of the computer shares it with the relative's own Tailscale account (in the Tailscale admin console, **Share** on the computer).
 
 ### Use it on an iPhone
 
 The iPhone is the screen, the microphone and the loudspeaker; the models still run on the computer. Both must be on the same Wi-Fi, so this works at home only.
 
-1. On the computer, close the Dezheimer window if one is open, then double-click `start-phone.bat`. If Windows asks whether Python may be reached from the network, allow it for private networks.
+1. On the computer, close the Near window if one is open, then double-click `start-phone.bat`. If Windows asks whether Python may be reached from the network, allow it for private networks.
 2. The window shows two addresses and a 6-digit code. In Safari on the iPhone, open the first address (it starts with `http://`) and follow the steps of the page: download the certificate, install it, trust it. This is done once.
 3. Open the second address (it starts with `https://`), type the code, and allow the microphone and the position.
-4. In Safari, tap Share, then "Add to Home Screen". Dezheimer then opens like an app.
+4. In Safari, tap Share, then "Add to Home Screen". Near then opens like an app.
 
 The certificate is made by your computer and only lets the iPhone trust that computer. The code is there because anyone on the same Wi-Fi can reach the address.
 
@@ -103,7 +109,7 @@ Once:
 
 Then:
 
-1. On the computer, close the Dezheimer window if one is open, and double-click `start-anywhere.bat`. The first time, Tailscale may give a link to allow secure addresses (HTTPS) for your devices: open it, allow, and start again.
+1. On the computer, close the Near window if one is open, and double-click `start-anywhere.bat`. The first time, Tailscale may give a link to allow secure addresses (HTTPS) for your devices: open it, allow, and start again.
 2. The window shows an address that starts with `https://`. Open it in Safari on the phone and allow the microphone and the position. There is no certificate to install and no code.
 3. In Safari, tap Share, then "Add to Home Screen".
 
@@ -135,7 +141,7 @@ Then double-click `dataset.bat` on the computer. A large speech model (the first
 
 ### Measure how well the app hears you
 
-Under "What can I say?", switch on **Keep the sound of my voice**. It is off by default. Each request you then say to the assistant is kept as a sound file in `%USERPROFILE%\.dezheimer\recordings`, on the computer that runs Dezheimer, with what the app heard. The Listen tab never keeps any sound.
+Under "What can I say?", switch on **Keep the sound of my voice**. It is off by default. Each request you then say to the assistant is kept as a sound file in `%USERPROFILE%\.dezheimer\recordings`, on the computer that runs Near, with what the app heard. The Listen tab never keeps any sound.
 
 After some practice, double-click `measure.bat`. It plays each new phrase and shows what was heard: press Enter if it is right, or type what you really said (`d` deletes the recording). It then compares the sizes of the speech model on your phrases: the share of words heard wrong, and the share of your own names and places written right, with and without your vocabulary. About 100 phrases give a fair comparison. The first run downloads the models it does not have yet.
 
@@ -207,4 +213,4 @@ Each step is detailed in [GUIDELINE.md](GUIDELINE.md).
 
 ## Disclaimer
 
-Dezheimer is a daily-life aid. It is not a medical device and does not diagnose, treat or monitor the disease.
+Near is a daily-life aid. It is not a medical device and does not diagnose, treat or monitor the disease.

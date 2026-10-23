@@ -1,5 +1,5 @@
 @echo off
-rem Starts Dezheimer and opens it in the browser. Double-click this file.
+rem Starts Near and opens it in the browser. Double-click this file.
 rem The virtual environment lives outside the project so that OneDrive does not sync it.
 set "VENV=%USERPROFILE%\.venvs\dezheimer"
 cd /d "%~dp0"

@@ -70,6 +70,7 @@ const Views = (() => {
 
     return `
       <header class="hello">
+        <p class="brand"><img src="near-mark.png" alt=""><span>Near</span></p>
         <p class="hello-date">${esc(Dates.long(now))}</p>
         <h1>${greeting(now)}, ${esc(user.name)}</h1>
         <p class="hello-time">It is ${esc(Dates.time(now))}</p>

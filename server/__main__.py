@@ -22,10 +22,10 @@ def already_running() -> bool:
 
 if __name__ == "__main__":
     if already_running():
-        print(f"Dezheimer is already running. Opening {URL}")
+        print(f"Near is already running. Opening {URL}")
         webbrowser.open(URL)
     else:
-        print(f"Dezheimer is starting on {URL}")
+        print(f"Near is starting on {URL}")
         print("Keep this window open while you use the app. Close it to stop.")
         threading.Timer(1.5, webbrowser.open, [URL]).start()
         # reload: the server restarts by itself when its code changes.

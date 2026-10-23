@@ -1,10 +1,10 @@
-# Dezheimer — Project Guideline
+# Near — Project Guideline
 
 This document is the reference for the project: what we are building, the rules we follow, and the order in which we build it. The current progress is tracked separately in [CHECKPOINT.md](CHECKPOINT.md).
 
 ## 1. Vision
 
-People with Alzheimer's disease lose the ability to rely on their own memory for appointments, for recent events, and for what is happening in the lives of the people they love. Dezheimer is an **external memory**: it records what happens, keeps what matters, and gives it back in a simple form.
+People with Alzheimer's disease lose the ability to rely on their own memory for appointments, for recent events, and for what is happening in the lives of the people they love. Near is an **external memory**: it records what happens, keeps what matters, and gives it back in a simple form.
 
 It serves three needs:
 

@@ -293,7 +293,7 @@ const Walk = (() => {
     paintMessage();
     const position = await locate();
     if (!position) {
-      showError('I cannot see where you are. Allow Dezheimer to use the position of the phone, then try again.');
+      showError('I cannot see where you are. Allow Near to use the position of the phone, then try again.');
       return;
     }
     here = position;
@@ -368,7 +368,7 @@ const Walk = (() => {
         <a class="button" href="${googleMaps(walk.to)}" target="_blank" rel="noopener">Open in Google Maps</a>
         <button class="button" type="button" data-walk="stop">Stop the walk</button>
       </div>
-      <p class="source">Keep Dezheimer open on the screen: it watches the way only while it is showing. In Google Maps, it does not.</p>`;
+      <p class="source">Keep Near open on the screen: it watches the way only while it is showing. In Google Maps, it does not.</p>`;
     paintHelp();
     drawMap();
   };
@@ -417,10 +417,10 @@ const Walk = (() => {
     const L = window.L;
     if (marks.way) marks.way.remove();
     if (marks.to) marks.to.remove();
-    marks.way = L.polyline(walk.route.coords, { color: '#0F5E63', weight: 9, opacity: 0.85 }).addTo(map);
+    marks.way = L.polyline(walk.route.coords, { color: '#5B6249', weight: 9, opacity: 0.85 }).addTo(map);
     const info = document.getElementById('walk-info');
     if (info) info.textContent = `${far(walk.route.metres)}, about ${minutes(walk.route.seconds)} minutes on foot.`;
-    marks.to = L.circleMarker(walk.to, { radius: 14, color: '#FFFFFF', weight: 4, fillColor: '#A4262C', fillOpacity: 1 }).addTo(map);
+    marks.to = L.circleMarker(walk.to, { radius: 14, color: '#FFFFFF', weight: 4, fillColor: '#A04A35', fillOpacity: 1 }).addTo(map);
     map.fitBounds(marks.way.getBounds(), { padding: [30, 30] });
   };
 
@@ -428,7 +428,7 @@ const Walk = (() => {
     if (!map || !here) return;
     const L = window.L;
     if (marks.here) marks.here.setLatLng(here.at);
-    else marks.here = L.circleMarker(here.at, { radius: 11, color: '#FFFFFF', weight: 4, fillColor: '#1D5C8C', fillOpacity: 1 }).addTo(map);
+    else marks.here = L.circleMarker(here.at, { radius: 11, color: '#FFFFFF', weight: 4, fillColor: '#4E6B73', fillOpacity: 1 }).addTo(map);
     if (!map.getBounds().contains(here.at)) map.panTo(here.at);
   };
 

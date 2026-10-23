@@ -56,7 +56,7 @@ const Memory = (() => {
     } catch (err) {
       isError = true;
       message = err instanceof TypeError
-        ? 'The Dezheimer server is not answering.'
+        ? 'The Near server is not answering.'
         : `The conversation could not be read: ${err.message}`;
     }
     busy = false;

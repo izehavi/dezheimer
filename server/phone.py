@@ -141,12 +141,12 @@ def pairing() -> dict:
 
 
 CODE_PAGE = """<!doctype html><html lang="en"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1"><title>Dezheimer</title>
+<meta name="viewport" content="width=device-width, initial-scale=1"><title>Near</title>
 <style>body{font:20px system-ui;margin:0;padding:48px 24px;background:#FBF7F0;color:#1B2430;text-align:center}
 input,button{font:inherit;font-size:28px;padding:14px;border-radius:14px;border:2px solid #E2DACB;width:100%;max-width:320px;
 box-sizing:border-box;text-align:center;margin-top:16px}button{background:#0F5E63;color:#fff;border-color:#0F5E63;font-weight:700}
 .error{color:#A32020;font-weight:700}</style></head><body>
-<h1>Dezheimer</h1><p>Type the code shown in the Dezheimer window on the computer.</p>
+<h1>Near</h1><p>Type the code shown in the Near window on the computer.</p>
 __ERROR__
 <form method="post" action="/pair"><input name="code" inputmode="numeric" autocomplete="off" maxlength="6" autofocus>
 <button type="submit">Open</button></form></body></html>"""
@@ -166,7 +166,7 @@ def protect(app, pair: dict) -> None:
         if request.url.path == "/pair" and request.method == "POST":
             if wrong["count"] >= MAX_WRONG_CODES:
                 return HTMLResponse(CODE_PAGE.replace(
-                    "__ERROR__", '<p class="error">Too many wrong codes. Close the Dezheimer window on the computer and start it again.</p>'), 429)
+                    "__ERROR__", '<p class="error">Too many wrong codes. Close the Near window on the computer and start it again.</p>'), 429)
             # The form is read by hand, so that no extra package is needed.
             code = (parse_qs((await request.body()).decode("utf-8", "replace")).get("code") or [""])[0]
             if hmac.compare_digest(code.strip(), pair["code"]):
@@ -184,19 +184,19 @@ def protect(app, pair: dict) -> None:
 # ---- The plain page that gives the certificate ----
 
 SETUP_PAGE = """<!doctype html><html lang="en"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1"><title>Dezheimer on the iPhone</title>
+<meta name="viewport" content="width=device-width, initial-scale=1"><title>Near on the iPhone</title>
 <style>body{font:19px/1.5 system-ui;margin:0 auto;max-width:640px;padding:28px 20px;background:#FBF7F0;color:#1B2430}
 h1{font-size:30px}li{margin-bottom:14px}a.big{display:block;text-align:center;background:#0F5E63;color:#fff;font-weight:700;
 padding:16px;border-radius:14px;text-decoration:none;margin:10px 0}code{background:#fff;padding:2px 6px;border-radius:6px}</style></head><body>
-<h1>Dezheimer on the iPhone</h1>
+<h1>Near on the iPhone</h1>
 <p>To read this page on the iPhone, open Safari there and type: <code>__SETUP__</code></p>
 <p>The iPhone and the computer must be on the same Wi-Fi. Do steps 1 to 3 once, in <b>Safari</b> on the iPhone.</p>
 <ol>
 <li><b>Get the certificate.</b><a class="big" href="/dezheimer.crt">Download the certificate</a>Tap <b>Allow</b>. The iPhone says the profile was downloaded.</li>
 <li><b>Install it.</b> Open <b>Settings</b>. Tap <b>Profile Downloaded</b> near the top (or General, then VPN &amp; Device Management), then <b>Install</b>, and enter the code of the iPhone.</li>
 <li><b>Trust it.</b> In Settings, open <b>General</b>, <b>About</b>, and at the very bottom <b>Certificate Trust Settings</b>. Switch on <b>__CA__</b>.</li>
-<li><b>Open the app.</b><a class="big" href="__APP__">__APP__</a>Type the 6-digit code shown in the Dezheimer window on the computer. Allow the microphone and the position when Safari asks.</li>
-<li><b>Put it on the home screen.</b> In Safari, tap the Share button, then <b>Add to Home Screen</b>. Dezheimer then opens like an app.</li>
+<li><b>Open the app.</b><a class="big" href="__APP__">__APP__</a>Type the 6-digit code shown in the Near window on the computer. Allow the microphone and the position when Safari asks.</li>
+<li><b>Put it on the home screen.</b> In Safari, tap the Share button, then <b>Add to Home Screen</b>. Near then opens like an app.</li>
 </ol>
 <p>The certificate only lets this iPhone trust this computer. To remove it later: Settings, General, VPN &amp; Device Management.</p>
 </body></html>"""
@@ -253,7 +253,7 @@ async def serve(paths: dict) -> None:
 
 if __name__ == "__main__":
     if already_running():
-        print("Dezheimer is already running in another window. Close that window, then start this again.")
+        print("Near is already running in another window. Close that window, then start this again.")
         raise SystemExit(1)
 
     address = home_address()
@@ -267,7 +267,7 @@ if __name__ == "__main__":
     protect(app, pair)
     serve_setup(address, paths["ca"])
 
-    print("Dezheimer is starting, for this computer and for a phone on the same Wi-Fi.")
+    print("Near is starting, for this computer and for a phone on the same Wi-Fi.")
     print("Keep this window open while you use the app. Close it to stop.")
     print()
     print("If Windows asks whether Python may be reached from the network, answer: Allow (private networks).")

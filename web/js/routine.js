@@ -45,11 +45,11 @@ const Routine = (() => {
   // ---- On "My day": reminders when the app is closed ----
 
   const PUSH = {
-    on: 'Reminders come even when Dezheimer is closed.',
-    off: 'Reminders only come while Dezheimer is open.',
-    denied: 'Notifications are refused for Dezheimer on this phone. Allow them in the settings of the phone.',
-    unsupported: 'To be reminded when Dezheimer is closed, on an iPhone: in Safari, tap Share, then "Add to Home Screen", and open Dezheimer from its icon.',
-    error: 'This did not work. The Dezheimer server may not be reachable.',
+    on: 'Reminders come even when Near is closed.',
+    off: 'Reminders only come while Near is open.',
+    denied: 'Notifications are refused for Near on this phone. Allow them in the settings of the phone.',
+    unsupported: 'To be reminded when Near is closed, on an iPhone: in Safari, tap Share, then "Add to Home Screen", and open Near from its icon.',
+    error: 'This did not work. The Near server may not be reachable.',
   };
 
   const pushCard = () => (Relatives.role() === 'person' && Account.signedIn() ? `

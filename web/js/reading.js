@@ -214,7 +214,7 @@ const Reading = (() => {
         <button class="button primary big" type="button" data-do="start">Start reading</button>
       </p>
       <p class="source">Read at your usual pace, as you would speak to the app. If you make a mistake, just go on:
-        a part that does not match the text is left out. The sound is kept on the computer that runs Dezheimer.</p>
+        a part that does not match the text is left out. The sound is kept on the computer that runs Near.</p>
       ${total ? `<p class="source">Kept on the computer so far: ${total.readings} ${total.readings === 1 ? 'reading' : 'readings'}, about ${total.minutes} minutes.</p>` : ''}
       <article class="card reading-text preview">
         <h2>${esc(text.title)}</h2>

@@ -110,7 +110,7 @@ const Account = (() => {
         note('You are signed in. What you add is now saved in your account.');
       }
     } catch {
-      note('The Dezheimer server is not answering.', true);
+      note('The Near server is not answering.', true);
     }
     paint();
     announce();

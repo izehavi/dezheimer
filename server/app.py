@@ -1,4 +1,4 @@
-"""Dezheimer server: serves the web app and the transcription API."""
+"""Near server: serves the web app and the transcription API."""
 
 import asyncio
 import datetime as dt
@@ -54,7 +54,7 @@ async def lifespan(app: FastAPI):
     reminding.cancel()
 
 
-app = FastAPI(title="Dezheimer", lifespan=lifespan)
+app = FastAPI(title="Near", lifespan=lifespan)
 
 
 @app.middleware("http")

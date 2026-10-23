@@ -52,18 +52,19 @@ const Relatives = (() => {
   // ---- The first screen: who uses this phone ----
 
   const chooseView = () => `
-    <header class="page-head">
-      <h1>Welcome to Dezheimer</h1>
+    <header class="welcome">
+      <img class="welcome-logo" src="near-logo.png" alt="Near">
+      <h1>Welcome</h1>
       <p class="sub">Who will use this phone?</p>
     </header>
     <div class="roles">
       <button class="role-choice" type="button" data-role="person">
-        <span class="role-icon" aria-hidden="true">🧠</span>
+        ${Icons.icon('person', 'role-icon')}
         <span class="role-title">Me</span>
         <span class="role-text">I want help with my memory.</span>
       </button>
       <button class="role-choice" type="button" data-role="helper">
-        <span class="role-icon" aria-hidden="true">🤝</span>
+        ${Icons.icon('people', 'role-icon')}
         <span class="role-title">A relative</span>
         <span class="role-text">I help someone who has memory loss.</span>
       </button>
@@ -84,7 +85,7 @@ const Relatives = (() => {
 
   const helperHome = () => `
     <header class="hello">
-      <p class="hello-date">Dezheimer, for relatives</p>
+      <p class="brand"><img src="near-mark.png" alt=""><span>Near</span><span class="brand-for">for relatives</span></p>
       <h1>The people you help</h1>
     </header>
     <div id="relatives"></div>
@@ -141,9 +142,9 @@ const Relatives = (() => {
   const NOTIFY = {
     on: 'Notifications are on: this phone is told at once, even when the app is closed.',
     off: 'Notifications are off: you only see an alert when you open the app.',
-    denied: 'Notifications are refused for Dezheimer on this phone. Allow them in the settings of the phone, then come back.',
-    unsupported: 'This browser cannot get notifications. On an iPhone: in Safari, tap Share, then "Add to Home Screen", and open Dezheimer from its icon.',
-    error: 'Notifications could not be switched on. The Dezheimer server may not be reachable.',
+    denied: 'Notifications are refused for Near on this phone. Allow them in the settings of the phone, then come back.',
+    unsupported: 'This browser cannot get notifications. On an iPhone: in Safari, tap Share, then "Add to Home Screen", and open Near from its icon.',
+    error: 'Notifications could not be switched on. The Near server may not be reachable.',
   };
 
   const notifyCard = () => (notifications ? `
@@ -196,7 +197,7 @@ const Relatives = (() => {
 
   const codeCard = () => (code ? `
     <div class="card invite">
-      <p>On the phone of your relative, in Dezheimer, type this code:</p>
+      <p>On the phone of your relative, in Near, type this code:</p>
       <p class="invite-code">${esc(code.code.slice(0, 3))} ${esc(code.code.slice(3))}</p>
       <p class="source">It works once, until ${esc(Dates.time(new Date(code.expires * 1000)))}.</p>
     </div>` : '');
@@ -227,7 +228,7 @@ const Relatives = (() => {
   let draw = () => {};       // paints the box of the screen showing: the relative's home, or the Account screen
 
   const refresh = async () => {
-    try { await load(); } catch { note('The Dezheimer server is not answering.', true); }
+    try { await load(); } catch { note('The Near server is not answering.', true); }
     draw();
   };
 
@@ -257,7 +258,7 @@ const Relatives = (() => {
         const name = SampleData.user.name;
         const res = await Account.api('POST', 'links/invite', { name }).catch(() => null);
         if (res && res.ok) code = res.data;
-        else note((res && res.data.detail) || 'The Dezheimer server is not answering.', true);
+        else note((res && res.data.detail) || 'The Near server is not answering.', true);
         draw();
       }
       if (button.dataset.rel === 'notify') {
@@ -282,7 +283,7 @@ const Relatives = (() => {
         note(`You are now linked with ${res.data.name}.`);
         await load().catch(() => {});
       } else {
-        note((res && res.data.detail) || 'The Dezheimer server is not answering.', true);
+        note((res && res.data.detail) || 'The Near server is not answering.', true);
       }
       draw();
       // Keep what was typed when it did not work.

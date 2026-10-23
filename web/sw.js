@@ -5,7 +5,7 @@
 self.addEventListener('push', (event) => {
   let data;
   try { data = event.data.json(); } catch { data = { body: event.data ? event.data.text() : '' }; }
-  event.waitUntil(self.registration.showNotification(data.title || 'Dezheimer', {
+  event.waitUntil(self.registration.showNotification(data.title || 'Near', {
     body: data.body || '',
     data: { url: data.url || '/' },
     tag: 'dezheimer-alert',
