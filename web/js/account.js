@@ -36,6 +36,7 @@ const Account = (() => {
       method,
       headers: {
         'Content-Type': 'application/json',
+        'X-Language': I18n.lang,
         ...(session ? { Authorization: `Bearer ${session.token}` } : {}),
       },
       body: body ? JSON.stringify(body) : undefined,
@@ -63,9 +64,9 @@ const Account = (() => {
       remember();
     } else if (res.status === 409) {
       takeServerCopy(res.data);
-      note('Another device had saved newer data. It was loaded here.');
+      note(tr('Another device had saved newer data. It was loaded here.', 'Un autre appareil avait enregistré des données plus récentes. Elles ont été chargées ici.'));
     } else if (res.status === 401) {
-      signedOut('Please sign in again.');
+      signedOut(tr('Please sign in again.', 'Reconnectez-vous, s’il vous plaît.'));
     }
     paint();
   };
@@ -73,7 +74,7 @@ const Account = (() => {
   // On sign-in and when the app opens: get what is saved, or save what is here.
   const sync = async () => {
     const res = await call('GET', 'data');
-    if (res.status === 401) { signedOut('Please sign in again.'); return; }
+    if (res.status === 401) { signedOut(tr('Please sign in again.', 'Reconnectez-vous, s’il vous plaît.')); return; }
     if (!res.ok) return;
     if (res.data.version === (session.version || 0)) { savedAt = res.data.updated ? new Date(res.data.updated * 1000) : null; return; }
     if (hasItems(res.data.doc) || res.data.version > 0) takeServerCopy(res.data);
@@ -91,26 +92,27 @@ const Account = (() => {
   };
 
   const enter = async (path, email, password) => {
-    note('One moment…');
+    note(tr('One moment…', 'Un instant…'));
     paint();
     try {
       const hadLocal = hasItems(SampleData.exportAdded());
       const res = await call('POST', path, { email, password });
-      if (!res.ok) { note(res.data.detail || 'That did not work. Try again.', true); paint(); return; }
+      if (!res.ok) { note(res.data.detail || tr('That did not work. Try again.', 'Ça n’a pas marché. Réessayez.'), true); paint(); return; }
       session = { token: res.data.token, email: res.data.email, version: 0 };
       remember();
       const saved = await call('GET', 'data');
       if (saved.ok && saved.data.version > 0) {
         takeServerCopy(saved.data);
         note(hadLocal
-          ? 'You are signed in. The data saved in your account was loaded and replaced what was on this device.'
-          : 'You are signed in. Your saved data was loaded.');
+          ? tr('You are signed in. The data saved in your account was loaded and replaced what was on this device.',
+            'Vous êtes connecté·e. Les données de votre compte ont été chargées et ont remplacé celles de cet appareil.')
+          : tr('You are signed in. Your saved data was loaded.', 'Vous êtes connecté·e. Vos données ont été chargées.'));
       } else {
         await save();
-        note('You are signed in. What you add is now saved in your account.');
+        note(tr('You are signed in. What you add is now saved in your account.', 'Vous êtes connecté·e. Ce que vous ajoutez est maintenant enregistré dans votre compte.'));
       }
     } catch {
-      note('The Near server is not answering.', true);
+      note(tr('The Near server is not answering.', 'Le serveur de Near ne répond pas.'), true);
     }
     paint();
     announce();
@@ -119,12 +121,12 @@ const Account = (() => {
   // ---- Screen ----
 
   const view = () => `
-    <a class="back" href="#/">← Back</a>
+    <a class="back" href="#/">← ${tr('Back', 'Retour')}</a>
     <header class="page-head with-back">
-      <h1>Account and backup</h1>
+      <h1>${tr('Account and backup', 'Compte et sauvegarde')}</h1>
       <p class="sub">${Relatives.role() === 'helper'
-        ? 'Sign in to be linked with the people you help.'
-        : 'Sign in to keep a copy of what you add, and to find it again on another device.'}</p>
+        ? tr('Sign in to be linked with the people you help.', 'Connectez-vous pour être lié·e aux personnes que vous aidez.')
+        : tr('Sign in to keep a copy of what you add, and to find it again on another device.', 'Connectez-vous pour garder une copie de ce que vous ajoutez, et la retrouver sur un autre appareil.')}</p>
     </header>
     <div id="account"></div>
     ${Relatives.accountView()}`;
@@ -137,23 +139,23 @@ const Account = (() => {
     box.innerHTML = session ? `
       <section>
         <div class="card">
-          <p>Signed in as <strong>${esc(session.email)}</strong></p>
-          <p class="source">${savedAt ? `Last saved on ${esc(Dates.long(savedAt))} at ${esc(Dates.time(savedAt))}` : 'Not saved yet'}</p>
+          <p>${tr('Signed in as', 'Connecté·e en tant que')} <strong>${esc(session.email)}</strong></p>
+          <p class="source">${savedAt ? tr(`Last saved on ${esc(Dates.long(savedAt))} at ${esc(Dates.time(savedAt))}`, `Dernière sauvegarde le ${esc(Dates.long(savedAt).toLowerCase())} à ${esc(Dates.time(savedAt))}`) : tr('Not saved yet', 'Pas encore sauvegardé')}</p>
         </div>
         ${status}
         <p class="account-actions page-action">
-          <button class="button primary" type="button" data-do="save">Save now</button>
-          <button class="button" type="button" data-do="signout">Sign out</button>
+          <button class="button primary" type="button" data-do="save">${tr('Save now', 'Sauvegarder maintenant')}</button>
+          <button class="button" type="button" data-do="signout">${tr('Sign out', 'Me déconnecter')}</button>
         </p>
       </section>` : `
       <form class="account-form" id="account-form">
-        <label>Email <input type="email" name="email" autocomplete="username" required></label>
-        <label>Password (8 characters or more)
+        <label>${tr('Email', 'E-mail')} <input type="email" name="email" autocomplete="username" required></label>
+        <label>${tr('Password (8 characters or more)', 'Mot de passe (8 caractères ou plus)')}
           <input type="password" name="password" autocomplete="current-password" minlength="8" required></label>
         ${status}
         <div class="account-actions">
-          <button class="button primary" type="submit" data-do="signin">Sign in</button>
-          <button class="button" type="submit" data-do="signup">Create my account</button>
+          <button class="button primary" type="submit" data-do="signin">${tr('Sign in', 'Me connecter')}</button>
+          <button class="button" type="submit" data-do="signup">${tr('Create my account', 'Créer mon compte')}</button>
         </div>
       </form>`;
     // A relative's phone shows no data of its own.
@@ -165,25 +167,25 @@ const Account = (() => {
     const own = SampleData.profile();
     return own ? `
       <section class="profile">
-        <h2>Whose data</h2>
+        <h2>${tr('Whose data', 'Les données de qui')}</h2>
         <div class="card">
-          <p>This app holds the data of <strong>${esc(own.name)}</strong>: only what you add.</p>
-          <p class="source">Going back to the example keeps your data on this device. It comes back when you return.</p>
+          <p>${tr(`This app holds the data of <strong>${esc(own.name)}</strong>: only what you add.`, `Cette application contient les données de <strong>${esc(own.name)}</strong> : seulement ce que vous ajoutez.`)}</p>
+          <p class="source">${tr('Going back to the example keeps your data on this device. It comes back when you return.', 'Revenir à l’exemple garde vos données sur cet appareil. Elles reviennent quand vous revenez.')}</p>
         </div>
         <p class="account-actions page-action">
-          <button class="button" type="button" data-do="example">See the example (Helen)</button>
+          <button class="button" type="button" data-do="example">${tr('See the example (Helen)', 'Voir l’exemple (Hélène)')}</button>
         </p>
       </section>` : `
       <section class="profile">
-        <h2>Whose data</h2>
+        <h2>${tr('Whose data', 'Les données de qui')}</h2>
         <div class="card">
-          <p>The app shows an example: Helen, her family and her week.</p>
-          <p class="source">To use it for yourself, start with your own data. The app is then empty, and holds only what you add.</p>
+          <p>${tr('The app shows an example: Helen, her family and her week.', 'L’application montre un exemple : Hélène, sa famille et sa semaine.')}</p>
+          <p class="source">${tr('To use it for yourself, start with your own data. The app is then empty, and holds only what you add.', 'Pour l’utiliser pour vous, commencez avec vos propres données. L’application est alors vide, et ne contient que ce que vous ajoutez.')}</p>
         </div>
         <div class="account-form">
-          <label>Your first name <input type="text" id="profile-name" autocomplete="given-name" maxlength="40"></label>
+          <label>${tr('Your first name', 'Votre prénom')} <input type="text" id="profile-name" autocomplete="given-name" maxlength="40"></label>
           <div class="account-actions">
-            <button class="button primary" type="button" data-do="own">Start with my own data</button>
+            <button class="button primary" type="button" data-do="own">${tr('Start with my own data', 'Commencer avec mes propres données')}</button>
           </div>
         </div>
       </section>`;
@@ -200,15 +202,15 @@ const Account = (() => {
         const name = action === 'own' ? field.value.trim() : null;
         if (action === 'own' && !name) { field.focus(); return; }
         if (SampleData.setProfile(name)) { location.hash = '#/'; location.reload(); }
-        else { note('This browser could not keep the choice.', true); paint(); }
+        else { note(tr('This browser could not keep the choice.', 'Ce navigateur n’a pas pu garder ce choix.'), true); paint(); }
         return;
       }
-      if (action === 'save') { await save(); note('Saved.'); paint(); }
+      if (action === 'save') { await save(); note(tr('Saved.', 'Sauvegardé.')); paint(); }
       if (action === 'signout') {
         await call('POST', 'signout').catch(() => {});
         session = null;
         remember();
-        note('You are signed out. Your data stays on this device.');
+        note(tr('You are signed out. Your data stays on this device.', 'Vous êtes déconnecté·e. Vos données restent sur cet appareil.'));
         paint();
         announce();
       }

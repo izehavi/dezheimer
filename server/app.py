@@ -18,18 +18,18 @@ from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
-from . import accounts, push, readings, recordings, routine
+from . import accounts, assistant_fr, commands_fr, push, readings, recordings, routine
 from .assistant import assist
 from .commands import parse_command
 from .intents import classifier
 from .understanding import understand
-from .transcriber import MAX_SECONDS, MODEL_NAME, SAMPLE_RATE, Transcriber
+from .transcriber import MAX_SECONDS, SAMPLE_RATE, for_language
 
 WEB_DIR = Path(__file__).resolve().parent.parent / "web"
 MAX_SAMPLE_RATE = 48000
 MAX_BODY_BYTES = MAX_SECONDS * MAX_SAMPLE_RATE * 4  # float32 samples
 
-transcriber = Transcriber()
+transcriber = for_language("en")   # the English one is loaded at start; the French one when first used
 
 
 REMIND_EVERY_SECONDS = 30
@@ -68,7 +68,7 @@ async def no_stale_files(request: Request, call_next):
 @app.get("/api/health")
 def health():
     return {
-        "model": MODEL_NAME,
+        "model": transcriber.model_name,
         "device": transcriber.device,
         "ready": transcriber.ready,
         "error": transcriber.error,
@@ -104,11 +104,14 @@ async def transcribe(request: Request):
 
     # Names and words the user is likely to say, sent by the app to help the speech model.
     vocabulary = unquote(request.headers.get("x-vocabulary", ""))
-    text = await run_in_threadpool(transcriber.transcribe, audio, sample_rate, vocabulary)
+    # The language of the app: "en" or "fr".
+    heard_by = for_language(request.headers.get("x-language", "en"))
+    text = await run_in_threadpool(heard_by.transcribe, audio, sample_rate, vocabulary)
     # The audio is transcribed in memory and dropped, unless the user switched on
     # "keep the sound of my voice": the phrase is then kept to measure the speech model.
     if request.headers.get("x-keep") == "1" and text:
-        return {"text": text, "audio": recordings.keep(audio, sample_rate, text, vocabulary, MODEL_NAME)}
+        return {"text": text, "audio": recordings.keep(audio, sample_rate, text, vocabulary, heard_by.model_name,
+                                                        lang=heard_by.language)}
     return {"text": text}
 
 
@@ -119,6 +122,7 @@ class ReadingDone(BaseModel):
     title: str = Field(max_length=200)
     text: str = Field(min_length=1, max_length=20000)   # the text that was on the screen
     pieces: int = Field(ge=1, le=readings.MAX_PIECES)
+    lang: str = Field(default="en", pattern="^(en|fr)$")   # the language of the text
 
 
 @app.get("/api/readings")
@@ -147,7 +151,7 @@ async def reading_piece(session: str, index: int, request: Request):
 def reading_done(session: str, done: ReadingDone):
     """The reading is over: its pieces become one recording, kept with the text."""
     try:
-        return {"seconds": readings.finish(session, done.pieces, done.title, done.text)}
+        return {"seconds": readings.finish(session, done.pieces, done.title, done.text, done.lang)}
     except ValueError as error:
         raise HTTPException(400, str(error))
 
@@ -162,12 +166,14 @@ class CommandRequest(BaseModel):
     text: str = Field(max_length=2000)
     now: dt.datetime  # the user's local date and time
     people: list[KnownPerson] = []
+    lang: str = "en"  # the language of the app: "en" or "fr"
 
 
 @app.post("/api/command")
 def command(request: CommandRequest):
     """Read a sentence and, if it is an agenda command, return the event it describes."""
-    return parse_command(request.text, request.now, [p.model_dump() for p in request.people])
+    parse = commands_fr.parse_command if request.lang == "fr" else parse_command
+    return parse(request.text, request.now, [p.model_dump() for p in request.people])
 
 
 class AssistRequest(BaseModel):
@@ -179,13 +185,15 @@ class AssistRequest(BaseModel):
     asked: str | None = None   # the detail the assistant asked for: "date", "time", "place", "people"
     answer: str | None = Field(default=None, max_length=2000)  # the user's reply to that question
     recent: str | None = Field(default=None, max_length=80)    # the person just talked about, for "She is ..."
+    lang: str = "en"  # the language of the app: "en" or "fr"
 
 
 @app.post("/api/assist")
 def assist_request(request: AssistRequest):
     """Understand one sentence said to the assistant: what is asked, and its details."""
     people = [p.model_dump() for p in request.people]
-    return assist(
+    understand_it = assistant_fr.assist if request.lang == "fr" else assist
+    return understand_it(
         request.text, request.now, people, request.intent, request.exact_names, request.asked, request.answer,
         request.recent,
     )
@@ -195,13 +203,14 @@ class UnderstandRequest(BaseModel):
     text: str = Field(min_length=1, max_length=20000)
     user: str = Field(default="Helen", max_length=60)
     people: list[KnownPerson] = []
+    lang: str = "en"  # the language of the conversation: "en" or "fr"
 
 
 @app.post("/api/understand")
 def understand_transcript(request: UnderstandRequest):
     """Read a whole transcript with the language model: a summary, and memos about people and things."""
     try:
-        return understand(request.text, [p.model_dump() for p in request.people], request.user)
+        return understand(request.text, [p.model_dump() for p in request.people], request.user, lang=request.lang)
     except ValueError:
         raise HTTPException(502, "The model gave an answer that could not be read. Try again.")
     except RuntimeError as error:  # for example, not enough memory on the graphics card
@@ -255,6 +264,27 @@ def _record_id(line: str):
 
 # ---- Accounts: sign in, and a backup of what the user added ----
 
+# The messages of accounts.py, for an app in French (header X-Language).
+_FRENCH = {
+    "This does not look like an email address.": "Cela ne ressemble pas à une adresse e-mail.",
+    f"The password needs at least {accounts.MIN_PASSWORD} characters.":
+        f"Le mot de passe doit avoir au moins {accounts.MIN_PASSWORD} caractères.",
+    "There is already an account with this email. Sign in instead.": "Il y a déjà un compte avec cet e-mail. Connectez-vous plutôt.",
+    "The email or the password is not right.": "L'e-mail ou le mot de passe n'est pas bon.",
+    "The backup is too large.": "La sauvegarde est trop grande.",
+    "Please give a name.": "Donnez un prénom, s'il vous plaît.",
+    "Too many wrong codes. Try again in an hour.": "Trop de codes faux. Réessayez dans une heure.",
+    "This code is not right, or it is too old. Ask for a new one.": "Ce code n'est pas bon, ou il est trop ancien. Demandez-en un nouveau.",
+    "This is the code of your own account. Type it on the phone of the relative.":
+        "C'est le code de votre propre compte. Tapez-le sur le téléphone du proche.",
+    "Please sign in again.": "Reconnectez-vous, s'il vous plaît.",
+}
+
+
+def said(request: Request, message: str) -> str:
+    """A message for the user, in the language of their app."""
+    return _FRENCH.get(message, message) if request.headers.get("x-language") == "fr" else message
+
 
 class Credentials(BaseModel):
     email: str = Field(max_length=200)
@@ -270,24 +300,24 @@ def signed_in_user(request: Request) -> int:
     token = request.headers.get("authorization", "").removeprefix("Bearer ").strip()
     user_id = accounts.user_for(token)
     if user_id is None:
-        raise HTTPException(401, "Please sign in again.")
+        raise HTTPException(401, said(request, "Please sign in again."))
     return user_id
 
 
 @app.post("/api/account/signup")
-def sign_up(credentials: Credentials):
+def sign_up(credentials: Credentials, request: Request):
     try:
         return accounts.sign_up(credentials.email, credentials.password)
     except accounts.AccountError as error:
-        raise HTTPException(400, str(error))
+        raise HTTPException(400, said(request, str(error)))
 
 
 @app.post("/api/account/signin")
-def sign_in(credentials: Credentials):
+def sign_in(credentials: Credentials, request: Request):
     try:
         return accounts.sign_in(credentials.email, credentials.password)
     except accounts.AccountError as error:
-        raise HTTPException(400, str(error))
+        raise HTTPException(400, said(request, str(error)))
 
 
 @app.post("/api/account/signout")
@@ -310,7 +340,7 @@ def save_backup(backup: Backup, request: Request):
         # Another device saved in the meantime: send back what it saved.
         return JSONResponse(conflict.current, status_code=409)
     except accounts.AccountError as error:
-        raise HTTPException(413, str(error))
+        raise HTTPException(413, said(request, str(error)))
 
 
 # ---- Links between the person and the relatives who help them ----
@@ -335,7 +365,7 @@ def make_invite(invite: Invite, request: Request):
     try:
         return accounts.invite(signed_in_user(request), invite.name)
     except accounts.AccountError as error:
-        raise HTTPException(400, str(error))
+        raise HTTPException(400, said(request, str(error)))
 
 
 @app.post("/api/account/links/join")
@@ -343,7 +373,7 @@ def join_person(join: Join, request: Request):
     try:
         return accounts.join(signed_in_user(request), join.code, join.name)
     except accounts.AccountError as error:
-        raise HTTPException(400, str(error))
+        raise HTTPException(400, said(request, str(error)))
 
 
 @app.delete("/api/account/links/{other_id}")
@@ -359,6 +389,7 @@ class Subscription(BaseModel):
     endpoint: str = Field(max_length=2000)
     p256dh: str = Field(max_length=200)
     auth: str = Field(max_length=100)
+    lang: str = Field(default="en", pattern="^(en|fr)$")   # the language of the notifications
 
 
 class Lost(BaseModel):
@@ -381,14 +412,35 @@ def push_key():
 def subscribe(subscription: Subscription, request: Request):
     if not subscription.endpoint.startswith("https://"):
         raise HTTPException(400, "Not a push address.")
-    accounts.subscribe(signed_in_user(request), subscription.endpoint, subscription.p256dh, subscription.auth)
+    accounts.subscribe(signed_in_user(request), subscription.endpoint, subscription.p256dh, subscription.auth,
+                       subscription.lang)
     return {}
 
 
-def _when(start_ms):
+def _when(start_ms, lang="en"):
     if start_ms is None:
         return ""
-    return dt.datetime.fromtimestamp(start_ms / 1000).strftime(" at %H:%M")
+    return dt.datetime.fromtimestamp(start_ms / 1000).strftime(" à %H:%M" if lang == "fr" else " at %H:%M")
+
+
+def _lost_message(name, lost, lang):
+    """The notification that the person may be lost, in the language of the relative's phone."""
+    if lang == "fr":
+        place = lost.place[0].lower() + lost.place[1:] if lost.place else ""
+        going = f"{lost.title}{', ' + place if place else ''}{_when(lost.start, 'fr')}" if lost.title else "quelque part"
+        return {
+            "title": f"{name} est peut-être perdu·e",
+            "body": f"Perdu·e {lost.times} fois en allant à : {going}."
+                    + (f" Maintenant dans {lost.street}." if lost.street else "") + " Ouvrez pour voir où.",
+            "url": "/#/",
+        }
+    going = f"{lost.title}{', ' + lost.place if lost.place else ''}{_when(lost.start)}" if lost.title else "somewhere"
+    return {
+        "title": f"{name} may be lost",
+        "body": f"Lost {lost.times} times on the way to: {going}."
+                + (f" Now on {lost.street}." if lost.street else "") + " Open to see where.",
+        "url": "/#/",
+    }
 
 
 @app.post("/api/account/alerts")
@@ -402,17 +454,11 @@ async def alert_relatives(lost: Lost, request: Request):
     if name is None:
         return {"told": []}
     accounts.add_alert(person_id, lost.model_dump())
-    going = f"{lost.title}{', ' + lost.place if lost.place else ''}{_when(lost.start)}" if lost.title else "somewhere"
-    message = {
-        "title": f"{name} may be lost",
-        "body": f"Lost {lost.times} times on the way to: {going}."
-                + (f" Now on {lost.street}." if lost.street else "") + " Open to see where.",
-        "url": "/#/",
-    }
     told = []
     for helper in accounts.links(person_id)["helpers"]:
         reached = False
         for subscription in accounts.subscriptions(helper["id"]):
+            message = _lost_message(name, lost, subscription.get("lang", "en"))
             status = await run_in_threadpool(push.send, subscription, message)
             if status in (404, 410):
                 accounts.unsubscribe(subscription["endpoint"])
@@ -455,6 +501,7 @@ class Routine(BaseModel):
     days: list[str] = Field(default=[], max_length=10)   # the days `done` covers
     zone: str | None = Field(default=None, max_length=60)
     offset: int = 0                                 # minutes ahead of UTC, if the zone is unknown
+    lang: str = Field(default="en", pattern="^(en|fr)$")
 
 
 @app.put("/api/account/routine")
@@ -463,7 +510,7 @@ def save_routine(r: Routine, request: Request):
     if any(not re.fullmatch(DAY, d) for d in r.days):
         raise HTTPException(400, "A day must be written YYYY-MM-DD.")
     accounts.set_routine(person_id, r.name, [t.model_dump() for t in r.tasks], r.zone, r.offset,
-                         [d.model_dump() for d in r.done], r.days)
+                         [d.model_dump() for d in r.done], r.days, r.lang)
     accounts.seen(person_id)
     return {}
 

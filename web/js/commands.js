@@ -24,6 +24,7 @@ const Commands = (() => {
         text,
         now,
         people: SampleData.people.map(({ id, name, relationship }) => ({ id, name, relationship })),
+        lang: I18n.lang,
       }),
     });
     if (!res.ok) throw new Error(`the server answered ${res.status}`);
@@ -72,21 +73,21 @@ const Commands = (() => {
 
   // ---- Screen ----
 
-  const MISSING = { date: 'the day', time: 'the time' };
+  const MISSING = { date: tr('the day', 'le jour'), time: tr('the time', 'l’heure') };
 
   const card = (p, index) => {
     const r = p.result;
-    const day = r.date ? esc(Dates.long(Dates.fromKey(r.date))) : '<span class="missing">day not heard</span>';
-    const time = r.time ? esc(r.time) : '<span class="missing">time not heard</span>';
-    const missing = r.missing.map((m) => MISSING[m]).join(' and ');
+    const day = r.date ? esc(Dates.long(Dates.fromKey(r.date))) : `<span class="missing">${tr('day not heard', 'jour pas entendu')}</span>`;
+    const time = r.time ? esc(r.time) : `<span class="missing">${tr('time not heard', 'heure pas entendue')}</span>`;
+    const missing = r.missing.map((m) => MISSING[m]).join(tr(' and ', ' et '));
 
     const actions = p.state === 'added'
-      ? `<p class="proposal-done">Added to the agenda.
-           <a href="#/agenda/${esc(p.date)}">See it in the agenda</a></p>`
-      : `${missing ? `<p class="proposal-hint">I did not hear ${missing}. Say it now, for example “tomorrow at 3 pm”.</p>` : ''}
+      ? `<p class="proposal-done">${tr('Added to the agenda.', 'Ajouté à l’agenda.')}
+           <a href="#/agenda/${esc(p.date)}">${tr('See it in the agenda', 'Le voir dans l’agenda')}</a></p>`
+      : `${missing ? `<p class="proposal-hint">${tr(`I did not hear ${missing}. Say it now, for example “tomorrow at 3 pm”.`, `Je n’ai pas entendu ${missing}. Dites-le maintenant, par exemple « demain à 15 heures ».`)}</p>` : ''}
          <div class="proposal-actions">
-           <button class="button primary" type="button" data-proposal="${index}" data-action="add"${missing ? ' disabled' : ''}>Add to the agenda</button>
-           <button class="button" type="button" data-proposal="${index}" data-action="ignore">Ignore</button>
+           <button class="button primary" type="button" data-proposal="${index}" data-action="add"${missing ? ' disabled' : ''}>${tr('Add to the agenda', 'Ajouter à l’agenda')}</button>
+           <button class="button" type="button" data-proposal="${index}" data-action="ignore">${tr('Ignore', 'Ignorer')}</button>
          </div>`;
 
     return `
@@ -94,9 +95,9 @@ const Commands = (() => {
         <p class="proposal-heard">“${esc(p.text)}”</p>
         <h3>${esc(r.title)}</h3>
         <dl>
-          <dt>When</dt><dd>${day}, ${time}</dd>
-          ${r.place ? `<dt>Where</dt><dd>${esc(r.place)}</dd>` : ''}
-          ${r.people.length ? `<dt>With</dt><dd>${esc(r.people.map((x) => x.name).join(', '))}</dd>` : ''}
+          <dt>${tr('When', 'Quand')}</dt><dd>${day}, ${time}</dd>
+          ${r.place ? `<dt>${tr('Where', 'Où')}</dt><dd>${esc(r.place)}</dd>` : ''}
+          ${r.people.length ? `<dt>${tr('With', 'Avec')}</dt><dd>${esc(r.people.map((x) => x.name).join(', '))}</dd>` : ''}
         </dl>
         ${actions}
       </article>`;
@@ -104,7 +105,7 @@ const Commands = (() => {
 
   const view = () => `
     <section>
-      <h2>Understood for the agenda</h2>
+      <h2>${tr('Understood for the agenda', 'Compris pour l’agenda')}</h2>
       <div id="proposals"></div>
     </section>`;
 
@@ -112,7 +113,7 @@ const Commands = (() => {
     const box = document.getElementById('proposals');
     if (!box) return; // another screen is showing
     box.innerHTML = proposals.map(card).join('')
-      || '<p class="empty">Say for example: “Add to my agenda a coffee with Sarah tomorrow at 3 pm at Carmel coffee.”</p>';
+      || `<p class="empty">${tr('Say for example: “Add to my agenda a coffee with Sarah tomorrow at 3 pm at Carmel coffee.”', 'Dites par exemple : « Ajoute dans mon agenda un café avec Sarah demain à 15 heures au café Carmel. »')}</p>`;
   };
 
   const mount = () => {

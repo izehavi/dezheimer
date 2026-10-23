@@ -17,7 +17,7 @@ const Memory = (() => {
   const find = async () => {
     const text = getText().trim();
     if (!text) {
-      message = 'There is no text yet. Switch on the microphone and speak, or type a conversation.';
+      message = tr('There is no text yet. Switch on the microphone and speak, or type a conversation.', 'Il n’y a pas encore de texte. Allumez le micro et parlez, ou tapez une conversation.');
       isError = true;
       render();
       return;
@@ -25,7 +25,7 @@ const Memory = (() => {
 
     busy = true;
     isError = false;
-    message = 'Reading the conversation… This takes up to a minute, and longer the first time.';
+    message = tr('Reading the conversation… This takes up to a minute, and longer the first time.', 'Je lis la conversation… Cela prend jusqu’à une minute, et plus la première fois.');
     render();
 
     try {
@@ -35,6 +35,7 @@ const Memory = (() => {
         body: JSON.stringify({
           text,
           user: SampleData.user.name,
+          lang: I18n.lang,
           people: SampleData.people.map(({ id, name, relationship }) => ({ id, name, relationship })),
         }),
       });
@@ -50,14 +51,15 @@ const Memory = (() => {
       }
       for (const memo of result.memos) proposals.push({ kind: 'memo', state: 'pending', ...memo });
 
-      message = `Read in ${result.seconds} seconds.`
-        + (result.memos.length ? '' : ' No lasting news was found in this conversation.')
-        + (result.rejected ? ` ${result.rejected} memo(s) were set aside because their words were not in the text.` : '');
+      message = tr(`Read in ${result.seconds} seconds.`, `Lu en ${result.seconds} secondes.`)
+        + (result.memos.length ? '' : tr(' No lasting news was found in this conversation.', ' Aucune nouvelle durable dans cette conversation.'))
+        + (result.rejected ? tr(` ${result.rejected} memo(s) were set aside because their words were not in the text.`,
+          ` ${result.rejected} note(s) mise(s) de côté : leurs mots n’étaient pas dans le texte.`) : '');
     } catch (err) {
       isError = true;
       message = err instanceof TypeError
-        ? 'The Near server is not answering.'
-        : `The conversation could not be read: ${err.message}`;
+        ? tr('The Near server is not answering.', 'Le serveur de Near ne répond pas.')
+        : tr(`The conversation could not be read: ${err.message}`, `La conversation n’a pas pu être lue : ${err.message}`);
     }
     busy = false;
     render();
@@ -69,16 +71,16 @@ const Memory = (() => {
       // No people listed: the model cannot tell who was there from who was only talked about.
       SampleData.add('diary', { date, text: p.text, personIds: [] });
       p.link = `#/diary/${Dates.key(date)}`;
-      p.where = 'the diary';
+      p.where = tr('the diary', 'le journal');
     } else if (p.personId) {
       SampleData.add('memos', { personId: p.personId, date, text: p.news, quote: p.quote });
       p.link = `#/people/${p.personId}`;
-      p.where = `${p.about}'s page`;
+      p.where = tr(`${p.about}'s page`, `la page de ${p.about}`);
     } else {
       // A thing, or someone who is not in People yet.
       SampleData.add('notes', { date, subject: p.about, text: p.news, quote: p.quote });
       p.link = `#/diary/${Dates.key(date)}`;
-      p.where = 'the notes of the day';
+      p.where = tr('the notes of the day', 'les notes du jour');
     }
     p.state = 'added';
   };
@@ -87,20 +89,20 @@ const Memory = (() => {
 
   const card = (p, index) => {
     const body = p.kind === 'summary'
-      ? `<p class="proposal-heard">Summary for today's diary</p>
+      ? `<p class="proposal-heard">${tr('Summary for today\'s diary', 'Résumé pour le journal du jour')}</p>
          <p class="proposal-text">${esc(p.text)}</p>`
-      : `<p class="proposal-heard">${p.personId ? 'Memo about' : 'Note about'} <strong>${esc(p.about)}</strong></p>
+      : `<p class="proposal-heard">${p.personId ? tr('Memo about', 'Note sur') : tr('Note about', 'Note sur')} <strong>${esc(p.about)}</strong></p>
          <p class="proposal-text">${esc(p.news)}</p>
-         <p class="source">Heard: “${esc(p.quote)}”</p>`;
+         <p class="source">${tr('Heard:', 'Entendu :')} “${esc(p.quote)}”</p>`;
 
-    const target = p.kind === 'summary' ? 'Add to the diary'
-      : p.personId ? `Add to ${esc(p.about)}'s memos` : 'Add to the notes';
+    const target = p.kind === 'summary' ? tr('Add to the diary', 'Ajouter au journal')
+      : p.personId ? tr(`Add to ${esc(p.about)}'s memos`, `Ajouter aux notes de ${esc(p.about)}`) : tr('Add to the notes', 'Ajouter aux notes');
 
     const actions = p.state === 'added'
-      ? `<p class="proposal-done">Added. <a href="${esc(p.link)}">See it in ${esc(p.where)}</a></p>`
+      ? `<p class="proposal-done">${tr('Added.', 'Ajouté.')} <a href="${esc(p.link)}">${tr('See it in', 'Le voir dans')} ${esc(p.where)}</a></p>`
       : `<div class="proposal-actions">
            <button class="button primary" type="button" data-memory="${index}" data-action="add">${target}</button>
-           <button class="button" type="button" data-memory="${index}" data-action="ignore">Ignore</button>
+           <button class="button" type="button" data-memory="${index}" data-action="ignore">${tr('Ignore', 'Ignorer')}</button>
          </div>`;
 
     return `<article class="card proposal${p.state === 'added' ? ' added' : ''}">${body}${actions}</article>`;
@@ -108,7 +110,7 @@ const Memory = (() => {
 
   const view = () => `
     <section>
-      <h2>Understood for the memory</h2>
+      <h2>${tr('Understood for the memory', 'Compris pour la mémoire')}</h2>
       <div id="memory"></div>
     </section>`;
 
@@ -117,7 +119,7 @@ const Memory = (() => {
     if (!box) return; // another screen is showing
     box.innerHTML = `
       <button class="button primary" type="button" data-action="find"${busy ? ' disabled' : ''}>
-        ${busy ? 'Reading…' : 'Find what to remember'}
+        ${busy ? tr('Reading…', 'Je lis…') : tr('Find what to remember', 'Trouver ce qu’il faut retenir')}
       </button>
       <p class="listen-status${isError ? ' error' : ''}" role="status">${esc(message)}</p>
       ${proposals.map(card).join('')}`;

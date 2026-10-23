@@ -75,6 +75,15 @@ class Messages(unittest.TestCase):
         self.assertEqual(m["title"], "Helen has not noted: Take the morning pills")
         self.assertIn("look at the pill box, at Wednesday morning", m["body"])
 
+    def test_in_french(self):
+        self.assertEqual(routine.box(PILLS, WEDNESDAY, "fr"), "mercredi matin")
+        m = routine.message(PILLS, "time", "Hélène", WEDNESDAY, "fr")
+        self.assertEqual(m["title"], "Hélène, c'est l'heure")
+        self.assertIn("Prenez-les dans la case : mercredi matin.", m["body"])
+        m = routine.message(PILLS, "relatives", "Hélène", WEDNESDAY, "fr")
+        self.assertEqual(m["title"], "Hélène n'a pas noté : Take the morning pills")
+        self.assertIn("à la case du mercredi matin", m["body"])
+
     def test_local_time(self):
         utc = dt.datetime(2026, 10, 21, 6, 0, tzinfo=dt.timezone.utc)
         self.assertEqual(routine.local_now("Europe/Paris", 0, utc), at(8, 0))
@@ -123,6 +132,15 @@ class Run(unittest.TestCase):
         self.run_at(8, 30)
         self.run_at(8, 45)
         self.assertEqual(self.sent, [("helen", "Helen, it is time")])
+
+    def test_each_phone_in_its_language(self):
+        accounts.subscribe(self.sarah, "https://push.example/sarah", "k", "a", "fr")
+        titles = []
+        send = lambda subscription, message: titles.append(message["title"]) or 201
+        for minute in (0, 30, 45):
+            routine.run(dt.datetime(2026, 10, 21, 6, minute, tzinfo=dt.timezone.utc), send)
+        # The person's phone in English, the relative's in French.
+        self.assertEqual(titles, ["Helen, it is time", "Helen, a small reminder", "Helen n'a pas noté : Take the morning pills"])
 
     def test_the_open_app_reminds_by_itself(self):
         accounts.seen(self.helen)

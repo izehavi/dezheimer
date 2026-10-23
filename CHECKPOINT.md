@@ -2,13 +2,13 @@
 
 Where the project stands. Updated at the end of each work session or milestone. The plan itself is in [GUIDELINE.md](GUIDELINE.md).
 
-**Last update:** 2026-10-23
+**Last update:** 2026-10-23 (afternoon)
 
 ## Current state
 
 **The app is used by voice on a computer and on an iPhone, with the models still running on the computer.** The home screen starts with one large button: the user says one thing, and the app adds, moves or cancels an event, adds a person, a connection or a memo, or answers a question aloud. It looks for the place of an event on the map, keeps the simple things of the day ("My day"), and reminds the user aloud. It can hold the user's own data instead of the example.
 
-Where the work stands on 2026-10-21: the priorities changed. The needs of a person with Alzheimer's were listed and ordered, from the most disabling to the least, in [NEEDS.md](NEEDS.md); the people memos are no longer the priority. The first need, **getting lost**, has a first version: "Take me there" shows the walking way to an event and watches it, and the relatives linked to the person are told when the person seems lost. For that, the app now has two kinds of users: the person, and a relative. On 2026-10-23, the second need, **medication errors**, with **eating, drinking and hygiene**: the things of every day are reminded even when the app is closed, noted at the moment with one big button, answered from the note or the pill box (never from memory), and the relatives are told when the pills or a meal are not noted. **All of it was tested in headless browsers only: the next move is to try it on two real phones** (see "Next steps").
+Where the work stands on 2026-10-21: the priorities changed. The needs of a person with Alzheimer's were listed and ordered, from the most disabling to the least, in [NEEDS.md](NEEDS.md); the people memos are no longer the priority. The first need, **getting lost**, has a first version: "Take me there" shows the walking way to an event and watches it, and the relatives linked to the person are told when the person seems lost. For that, the app now has two kinds of users: the person, and a relative. On 2026-10-23, the second need, **medication errors**, with **eating, drinking and hygiene**: the things of every day are reminded even when the app is closed, noted at the moment with one big button, answered from the note or the pill box (never from memory), and the relatives are told when the pills or a meal are not noted. The app is now called **Near**, with its logo and a calm look, and it speaks **English and French**: the screens, the voice, the speech model, the understanding of requests, the notifications. **All of it was tested in headless browsers only: the next move is to try it on two real phones** (see "Next steps").
 
 What is solid and what is not:
 
@@ -28,6 +28,7 @@ What is solid and what is not:
 | The user's own data | New on 2026-10-10: the app can start empty, under the user's own name, instead of the example. Works in a test on the computer. |
 | Take me there, and help when lost | New on 2026-10-21. The walking way to an event on the app's own map, the next turn said when close; off the way for 30 seconds or "I am lost": where the user is going, the street, the way again. Tested in a headless browser with simulated positions in Paris. **Not tried on a phone or while walking.** |
 | The things of every day, with the server | New on 2026-10-23. The phone sends its list and what is done; the server reminds when the app is closed (at the time, and 30 minutes later), and tells the relatives after 45 minutes for the pills, 2 hours for a meal or a drink. "Did I take my pills?" from the note or the pill box; "The box is empty"; a screen with one big button; pills more than an hour early are warned. Tested in headless browsers, and a real reminder was taken by Google's push service. **Not tried on an iPhone, nor over a real day.** |
+| French | New on 2026-10-23. A choice of language (first screen, Account; the phone's language at first). Every screen, the example (Hélène), the voice, the reminders, the directions, the texts to read. Speech: `openai/whisper-small` told to hear French. Requests: `paraphrase-multilingual-MiniLM-L12-v2` with about 200 French examples, and French rules for days, times, people, places, relationships and memos. Notifications in the language of each phone. 21 tests of French requests, most of them sentences not among the examples. Three sentences said by a French synthetic voice were written down right and understood. **Not tried with a real French voice.** |
 | Relatives: roles, links, alerts | New on 2026-10-21. Who uses the phone; a link made with a code; from the second time lost in a walk, the relatives' phones are notified (Web Push, sent by our server). Tested with two headless browsers: Google's push service took the notification. **Not tried on an iPhone, nor through Tailscale sharing.** |
 | iPhone | First prototype built on 2026-10-08: the iPhone opens the app from the computer over the home Wi-Fi. **Used by the tester on an iPhone 13:** requests by voice and the position worked (the feedback of round 2 partly comes from it). The home-screen icon and the reminders on the iPhone are not confirmed. |
 
@@ -133,6 +134,7 @@ Not fixed, because the cause is the speech model: "aunt" heard as "own", "Givata
 | [web/js/reminders.js](web/js/reminders.js) | Spoken reminders 30 minutes before, 5 minutes before, and at the start of each event; "Take me there" when the event has a place on the map. |
 | [web/js/walk.js](web/js/walk.js) | Take me there: the walking way (routing.openstreetmap.de), the map (Leaflet, OpenStreetMap tiles), watching the position, off the way, the help when lost, arrival, the screen kept on. |
 | [web/js/relatives.js](web/js/relatives.js) | Who uses this phone; the relative's app; the links on the Account screen. |
+| [web/js/i18n.js](web/js/i18n.js) | The language of the app, and `tr('English', 'Français')`, used wherever words are written. |
 | [web/js/routine.js](web/js/routine.js) | Sends the things of every day and what is done to the server; says every minute that the app is open; the switch "Remind me even when it is closed". |
 | [web/js/alerts.js](web/js/alerts.js), [web/sw.js](web/sw.js) | Sends the alert from the person's phone; switches notifications on in the relative's phone; the service worker shows them. |
 | [web/js/graph.js](web/js/graph.js) | The connections map. |
@@ -153,6 +155,7 @@ Not fixed, because the cause is the speech model: "aunt" heard as "own", "Givata
 | [server/intents.py](server/intents.py) | Finds what a sentence asks for, by meaning, with `sentence-transformers/all-MiniLM-L6-v2` and its list of example sentences. |
 | [server/assistant.py](server/assistant.py) | `POST /api/assist`: the intent, then the details read by rules (names, relationship, how they met, the memo text, the day asked about...). |
 | [server/accounts.py](server/accounts.py) | `/api/account/...`: accounts and backups in a SQLite file. Passwords are stored as salted scrypt hashes, sign-in tokens as hashes. Also the links between a person and their relatives (codes of 6 digits, valid 30 minutes, ten wrong codes an hour at most), the push addresses of the relatives' phones, and the alerts. |
+| [server/intents_fr.py](server/intents_fr.py), [server/commands_fr.py](server/commands_fr.py), [server/assistant_fr.py](server/assistant_fr.py) | French requests: the examples and hints, the reading of an event (days, times, "avec", "chez", "au café"), and the details of each request, written in French for the app. The same answers as the English modules, so the app treats both alike. |
 | [server/routine.py](server/routine.py) | Every 30 seconds: what is due for each person at their own time (`tzdata`), the reminders sent to the person's phone when the app is not open, and the relatives told. Each message is claimed in the database before it is sent, so it is never sent twice. Also the day of a person as a relative sees it. |
 | [server/push.py](server/push.py) | Web Push: encrypts a notification for one phone (RFC 8291) and signs it with this server's key (VAPID), kept in `%USERPROFILE%\.dezheimer\push`. Written with `cryptography` and `httpx`, without a push library; checked against the reference library `http_ece`. |
 | [server/recordings.py](server/recordings.py), [server/measure.py](server/measure.py) | The phrases kept when the user asks for it, and `measure.bat`: writes down what was really said (`python -m server.measure label`), then scores tiny, base, small and the small model for every language on them (`python -m server.measure`). |
@@ -162,7 +165,7 @@ Not fixed, because the cause is the speech model: "aunt" heard as "own", "Givata
 | [server/commands.py](server/commands.py) | Reads an event from a sentence: day, time, people, place, activity. Also `POST /api/command`, used by the Listen screen. |
 | [server/understanding.py](server/understanding.py) | `POST /api/understand`: summary and memos from a whole conversation with `Qwen/Qwen2.5-3B-Instruct`, checked by code. |
 
-Tests are in [tests/](tests/): 125 tests, run with `python -m unittest discover tests`.
+Tests are in [tests/](tests/): 147 tests, run with `python -m unittest discover tests`.
 
 ### How a voice request works
 
@@ -190,6 +193,8 @@ To make a request more robust, add example sentences to `EXAMPLES` in [server/in
 - The project is saved on GitHub: github.com/izehavi/dezheimer, branch `main`.
 
 ## What was tested
+
+- **French, 2026-10-23.** In a headless browser in French: every screen (home, agenda, people, a person, connections, diary, my day, step by step, the screen of one thing, account, listen, reading, walk) had no English words left, and no error. Typed to the assistant: the agenda of the day, a new coffee (confirmed with « oui »), « Est-ce que j'ai pris mes médicaments du matin ? » (the pill box), the time, a memo refused with « non »: all answered in French. Speech: three French sentences said by the Windows voice Hortense, sent as the app sends them: the French model wrote « Ajoute un café avec Sarah demain à 15h au café Carmel », « Est-ce que j'ai pris mes médicaments du matin ? » and « Rappelles-toi que Lothan a commencé un nouveau travail à Rehovot. », names right; the English model made nonsense of the same sound. These sentences were then understood. 21 tests of French requests (19 not among the examples), French reminders and notifications, each phone in its own language. The English app was checked again after the change. Not tested: a real French voice, French on a phone, the French memos of a whole conversation by the language model.
 
 - **Pills and meals, 2026-10-23,** in headless Chrome with a test server, Helen and Sarah linked, on the example list (pills at 8 and 21, meals). At 10:48: "Did I take my morning pills?" gave "I have no note of it. Look at your pill box, at Friday morning..."; "Have I had breakfast?" gave "It is a good time to eat something"; "The box is empty" then "yes" noted the pills, and the question then answered "You do not need to take them again". The screen for the evening pills, opened at 10:49, said "It is not time yet... Do not take these pills now"; that warning was added after this test let the evening pills be ticked in the morning without a word. "Remind me even when it is closed" got a push address. Sarah's app showed the day: the pills ✓ "the pill box was empty", breakfast "Not noted", the rest "Not yet". The server's reminder for lunch, run at 12:30 in Helen's time zone, went to her real push address and was taken by Google (201), and was not sent a second time. The timings (at the time, 30 minutes, 45 minutes, 2 hours, not sent late, not when done, not when the app is open, only on its days) are in 17 tests. Not tested: an iPhone notification, a whole real day, the app open on two devices.
 
@@ -223,6 +228,9 @@ To make a request more robust, add example sentences to `EXAMPLES` in [server/in
 - **Language model reader** (earlier today): on three typed conversations it found 4 of about 9 pieces of news, with no invented quote, and takes 15 to 40 seconds.
 
 ## Known limits
+
+- French: the rules read the usual ways of saying things; unusual ones may need examples, as English did. The sentences said to the app in French are understood, but the app does not translate the data: Helen's example has both languages, the user's own data stays in the language it was said in.
+- The French speech model is `whisper-small` for every language: on a phone, a smaller one will need training on the user's voice, as for English.
 
 - The things of every day: the server knows the list and what is done only when the person is signed in, and once the app was opened after a change. A tick made while the server is unreachable is sent when the app opens again. A note is only as true as the touch: pressing "I took them" without taking them is not seen, except by the relatives through the pill box.
 - The kind of a thing (pills, meal, drink, washing) is read from its words, in English. "Take my Doliprane" is not seen as pills.
@@ -319,6 +327,8 @@ Then, in the code:
 | 2026-10-23 | With no note, the pills are never "take them": the pill box decides. A meal or a drink with no note: "eat something", "have a glass of water". | A double dose is dangerous; a second meal or glass of water is not. |
 | 2026-10-23 | The relatives are told after 45 minutes for the pills, 2 hours for a meal or a drink; nothing for washing and the rest. | Proposed and accepted. Washing is a matter of dignity: the relative sees it over the week, not each day. |
 | 2026-10-23 | The reminders when the app is closed come from our server, by the same Web Push as the alerts; the server keeps the list of things of every day and what is done, not the rest of the backup. | It is the only way a web app can remind when closed. Keeping only this list, apart, still works once the backup is encrypted. |
+| 2026-10-23 | French as a second language, chosen in the app: a speech model for every language, a sentence model made for many languages, and French rules written apart (`*_fr.py`). The words of the app are written in both languages where they are used, with `tr()`. | Asked by the project owner, who uses a French phone. Translating French into English before understanding would have turned the user's own words (titles, memos) into English. |
+| 2026-10-23 | In French, the app says "vous" to the person. | Respect for an older person; it is how French speaks to someone one does not tutoie. |
 | 2026-10-23 | The app is called **Near**, with its logo and a new look: old paper, sage and beige, Atkinson Hyperlegible Next, rounded shapes, line icons instead of emoji. The code, the folders and the stored keys keep the name dezheimer. | Asked by the project owner, with the logo and the art direction. Renaming the stored keys would lose what is already saved on the phones. |
 | 2026-10-07 | Everything the app is about to write down must be confirmed first. | A wrong memory is worse than no memory (guideline, principle 2). |
 | 2026-10-07 | Voice requests are understood with a small sentence model and rules, not with a language model. | It is fast (about 50 ms), small enough for a phone, and predictable. The project owner asked for requests to work by meaning, on a phone, locally. |
@@ -352,5 +362,6 @@ Then, in the code:
 - **2026-10-10** — The app speaks with an English voice of the device, and says so when there is none.
 - **2026-10-12** — Checkpoint brought up to date. Nothing new was built or recorded since 2026-10-10; the 92 tests pass.
 - **2026-10-21** — The needs of a person with Alzheimer's, ordered ([NEEDS.md](NEEDS.md)). Who uses this phone, and links between the person and relatives. Take me there: the walking way to an event, watched; help when lost. Alerts to the relatives' phones by Web Push. 108 tests pass.
+- **2026-10-23** — Near in French: the choice of language, every screen and the example, the French speech model, French requests understood, French reminders and notifications. 147 tests pass.
 - **2026-10-23** — The app is called Near: the logo on the home screen of the phone and in the app, and a warm, calm look (old paper, sage and beige, a font made for low vision, line icons).
 - **2026-10-23** — Pills, meals, drinks and washing: reminders when the app is closed, sent by the server; a screen with one big button; answers from the note or the pill box; the relatives told and shown the day. 125 tests pass.

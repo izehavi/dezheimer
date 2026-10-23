@@ -38,7 +38,8 @@ const Alerts = (() => {
 
   const tellServer = async (sub) => {
     const { endpoint, keys } = sub.toJSON();
-    const res = await Account.api('POST', 'push', { endpoint, p256dh: keys.p256dh, auth: keys.auth });
+    // The language too: the notifications of this phone are written in it.
+    const res = await Account.api('POST', 'push', { endpoint, p256dh: keys.p256dh, auth: keys.auth, lang: I18n.lang });
     return res.ok;
   };
 

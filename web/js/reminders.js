@@ -16,7 +16,7 @@ const Reminders = (() => {
   };
 
   // "At home" -> "at home" inside a sentence; names keep their capital.
-  const lower = (s) => (/^(At|In|On|Your|The|A|An|Someone)\b/.test(s || '') ? s[0].toLowerCase() + s.slice(1) : s || '');
+  const lower = (s) => (/^(At|In|On|Your|The|A|An|Someone|À|Au|Aux|Chez|Votre|Le|La|Les|Un|Une)(\b|\s)/.test(s || '') ? s[0].toLowerCase() + s.slice(1) : s || '');
 
   // The reminder due now, if any: the closest lead that has been reached and not yet given.
   const due = (now) => {
@@ -35,8 +35,9 @@ const Reminders = (() => {
 
   const sentence = ({ event, lead, minutes }) => {
     const what = `${event.title}${event.place ? `, ${lower(event.place)}` : ''}.${event.note ? ` ${event.note}` : ''}`;
-    if (lead === 0 || minutes === 0) return `${SampleData.user.name}, it is time. ${what}`;
-    return `${SampleData.user.name}, in ${minutes} ${minutes === 1 ? 'minute' : 'minutes'}, at ${Speech.time(event.start)}: ${what}`;
+    if (lead === 0 || minutes === 0) return tr(`${SampleData.user.name}, it is time. ${what}`, `${SampleData.user.name}, c'est l'heure. ${what}`);
+    return tr(`${SampleData.user.name}, in ${minutes} ${minutes === 1 ? 'minute' : 'minutes'}, at ${Speech.time(event.start)}: ${what}`,
+      `${SampleData.user.name}, dans ${minutes} ${minutes === 1 ? 'minute' : 'minutes'}, à ${Speech.time(event.start)} : ${what}`);
   };
 
   const check = () => {
@@ -65,7 +66,7 @@ const Reminders = (() => {
     document.getElementById('reminder-done').addEventListener('click', (e) => {
       document.getElementById('reminder').hidden = true;
       Day.markDone(e.currentTarget.dataset.task);
-      Speech.say('Good. It is noted.');
+      Speech.say(tr('Good. It is noted.', 'Bien. C’est noté.'));
     });
     document.getElementById('reminder-go').addEventListener('click', () => {
       document.getElementById('reminder').hidden = true;

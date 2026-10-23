@@ -44,7 +44,8 @@ const Assistant = (() => {
   ));
   const $ = (id) => document.getElementById(id);
   // "At home" -> "at home" inside a sentence; names keep their capital.
-  const lower = (s) => (/^(At|In|On|Your|The|A|An|Someone)\b/.test(s || '') ? s[0].toLowerCase() + s.slice(1) : s || '');
+  const lower = (s) => (/^(At|In|On|Your|The|A|An|Someone|À|Au|Aux|Chez|Dans|Votre|Vos|Le|La|Les|L'|Un|Une|Quelqu'un)(\b|\s|')/.test(s || '')
+    ? s[0].toLowerCase() + s.slice(1) : s || '');
   const { people, memos, events, diary, notes, connections } = SampleData;
   const personById = (id) => people.find((p) => p.id === id);
 
@@ -168,9 +169,17 @@ const Assistant = (() => {
 
   const YES = /\b(yes|yeah|yep|yup|ok|okay|correct|right|sure|of course|absolutely|please do|do it|add it|exactly|that'?s it|go ahead|m+-?h+m+|uh-?huh)\b/i;
   const NO = /\b(no|nope|cancel|wrong|don'?t|stop|not)\b/i;
+  // In French. "Non merci" is a no; "D'accord", "Ouais", "Bien sûr", "Vas-y" are a yes.
+  const OUI = /(^|[^a-zà-ÿ])(oui|ouais|ok|okay|d'accord|daccord|bien s[uû]r|exactement|c'est (?:[çc]a|bon)|vas-y|allez-y|volontiers|tout à fait|parfait|absolument|m+-?h+m+)([^a-zà-ÿ]|$)/i;
+  const NON = /(^|[^a-zà-ÿ])(non|annule[rz]?|pas [çc]a|surtout pas|stop|arr[eê]te)([^a-zà-ÿ]|$)/i;
 
   // "yes" or "no"; null when it is neither. "Yes, cancel it" is a yes.
   const yesOrNo = (text) => {
+    if (I18n.fr) {
+      if (/^\W*(oui|ouais|ok|okay|d'accord|bien s[uû]r|m+-?h+m+)([^a-zà-ÿ]|$)/i.test(text)) return 'yes';
+      if (NON.test(text)) return 'no';
+      return OUI.test(text) ? 'yes' : null;
+    }
     if (/^\W*(yes|yeah|yep|yup|ok|okay|sure|m+-?h+m+|uh-?huh)\b/i.test(text)) return 'yes';
     if (NO.test(text)) return 'no';
     return YES.test(text) ? 'yes' : null;
@@ -206,16 +215,16 @@ const Assistant = (() => {
       try {
         if (yesOrNo(text) === 'no') { Places.decline(); await next({ found: [] }); return; }
         const town = await Places.setTown(text).catch(() => null);
-        await next(town ? await lookUp(place, town) : { found: [], note: 'I did not find this town, so I keep the place as you said it.' });
+        await next(town ? await lookUp(place, town) : { found: [], note: tr('I did not find this town, so I keep the place as you said it.', "Je n'ai pas trouvé cette ville : je garde le lieu comme vous l'avez dit.") });
       } catch (err) { failed(err); }
       return;
     }
 
     if (confirm) {
       const answer = yesOrNo(text);
-      if (answer === 'no') { confirm = null; await say('All right, I changed nothing.'); return; }
+      if (answer === 'no') { confirm = null; await say(tr('All right, I changed nothing.', "Très bien, je n'ai rien changé.")); return; }
       if (answer === 'yes') { await accept(); return; }
-      await say('Please say yes or no.', { listen: true });
+      await say(tr('Please say yes or no.', 'Dites oui ou non, s’il vous plaît.'), { listen: true });
       return;
     }
 
@@ -244,7 +253,7 @@ const Assistant = (() => {
       if (nameCheck) {
         // The answer to "Do you mean Rose?": the first sentence is read again, with the right name.
         const answer = yesOrNo(text);
-        if (!answer) { await say('Please say yes or no.', { listen: true }); return; }
+        if (!answer) { await say(tr('Please say yes or no.', 'Dites oui ou non, s’il vous plaît.'), { listen: true }); return; }
         const { heard: name, intent: asked } = nameCheck;
         full = answer === 'yes' ? nameCheck.text.replace(nameCheck.heard, nameCheck.name) : nameCheck.text;
         intent = asked;
@@ -254,7 +263,8 @@ const Assistant = (() => {
         nameCheck = null;
         // A question about someone who is not known cannot be answered.
         if (exactNames && ['ask_agenda', 'ask_person', 'change_event', 'cancel_event'].includes(asked)) {
-          await say(`I do not know ${name} yet. You can say: add a new person called ${name}.`);
+          await say(tr(`I do not know ${name} yet. You can say: add a new person called ${name}.`,
+            `Je ne connais pas encore ${name}. Vous pouvez dire : ajoute une nouvelle personne qui s'appelle ${name}.`));
           return;
         }
       }
@@ -267,7 +277,7 @@ const Assistant = (() => {
   const failed = (err) => {
     pending = nameCheck = townAsk = null;
     phase = 'idle';
-    const problem = `I could not understand because of a problem: ${err.message}`;
+    const problem = tr(`I could not understand because of a problem: ${err.message}`, `Je n'ai pas pu comprendre à cause d'un problème : ${err.message}`);
     log.push({ who: 'app', text: problem, error: true });
     if (trace) trace.turns.push({ who: 'app', text: problem, error: true });
     settle();
@@ -282,7 +292,7 @@ const Assistant = (() => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        text, now, intent: intent || null, exact_names: exactNames, ...reply, recent: lately,
+        text, now, intent: intent || null, exact_names: exactNames, ...reply, recent: lately, lang: I18n.lang,
         people: people.map(({ id, name, relationship }) => ({ id, name, relationship })),
       }),
     });
@@ -300,7 +310,7 @@ const Assistant = (() => {
 
   const propose = (proposal) => {
     confirm = proposal;
-    return say(`${proposal.say} ${proposal.question || 'Shall I add it?'}`, { listen: true });
+    return say(`${proposal.say} ${proposal.question || tr('Shall I add it?', 'Je l’ajoute ?')}`, { listen: true });
   };
 
   const accept = async () => {
@@ -340,7 +350,8 @@ const Assistant = (() => {
     const near = await Places.here();
     if (!near) {
       townAsk = { place, next };
-      return say('To find this place on the map, I need to know where you are. In which town are you?', { listen: true });
+      return say(tr('To find this place on the map, I need to know where you are. In which town are you?',
+        'Pour trouver ce lieu sur la carte, j’ai besoin de savoir où vous êtes. Dans quelle ville êtes-vous ?'), { listen: true });
     }
     return next(await lookUp(place, near));
   };
@@ -350,16 +361,23 @@ const Assistant = (() => {
 
   const mapSay = ({ found, searched, near, note }) => {
     if (note) return ` ${note}`;
-    if (!found.length) return searched ? ' I did not find this place on the map near you, so I keep it as you said it.' : '';
-    if (!found[0].sure) return ' I did not find exactly this place on the map. Places with a close name are on the screen.';
+    if (!found.length) {
+      return searched ? tr(' I did not find this place on the map near you, so I keep it as you said it.',
+        " Je n'ai pas trouvé ce lieu sur la carte près de vous : je le garde comme vous l'avez dit.") : '';
+    }
+    if (!found[0].sure) {
+      return tr(' I did not find exactly this place on the map. Places with a close name are on the screen.',
+        " Je n'ai pas trouvé exactement ce lieu sur la carte. Des lieux au nom proche sont à l'écran.");
+    }
     const [first, ...others] = found;
-    return ` On the map, I found ${first.name}${first.address ? `, ${first.address}` : ''}`
-      + `${near.exact ? `, ${Places.far(first.km)} from here` : ''}.`
-      + (others.length ? ` There ${others.length === 1 ? 'is 1 other place' : `are ${others.length} other places`} on the screen.` : '');
+    const where = `${first.name}${first.address ? `, ${first.address}` : ''}${near.exact ? `, ${tr(`${Places.far(first.km)} from here`, `à ${Places.far(first.km)} d'ici`)}` : ''}`;
+    const more = others.length === 1 ? tr(' There is 1 other place on the screen.', ' Il y a 1 autre lieu à l’écran.')
+      : others.length ? tr(` There are ${others.length} other places on the screen.`, ` Il y a ${others.length} autres lieux à l’écran.`) : '';
+    return tr(` On the map, I found ${where}.`, ` Sur la carte, j'ai trouvé ${where}.`) + more;
   };
 
   // The place written in the agenda: the real name found on the map, or else the words that were said.
-  const placeName = (said, spot) => (spot ? `At ${spot.name}` : said || '');
+  const placeName = (said, spot) => (spot ? tr(`At ${spot.name}`, `À ${spot.name}`) : said || '');
 
   // What an event keeps of the place chosen on the map.
   const spotOf = (spot) => ({ address: spot && spot.address, lat: spot && spot.lat, lon: spot && spot.lon });
@@ -368,14 +386,14 @@ const Assistant = (() => {
 
   const dayName = (date, now) => {
     const relative = Dates.relative(date, now);
-    return relative === Dates.long(date) ? `on ${relative}` : relative.toLowerCase();
+    return relative === Dates.long(date) ? tr(`on ${relative}`, `le ${relative.toLowerCase()}`) : relative.toLowerCase();
   };
 
   // The place, unless the title already says it ("Go to the market").
-  const placeOf = (e) => (e.place && !e.title.toLowerCase().includes(e.place.replace(/^(At|In) /, '').toLowerCase())
+  const placeOf = (e) => (e.place && !e.title.toLowerCase().includes(e.place.replace(/^(At|In|À|Au|Aux|Chez) /, '').toLowerCase())
     ? `, ${lower(e.place)}` : '');
 
-  const eventLine = (e) => `At ${Speech.time(e.start)}: ${e.title}${placeOf(e)}.`;
+  const eventLine = (e) => tr(`At ${Speech.time(e.start)}: ${e.title}${placeOf(e)}.`, `À ${Speech.time(e.start)} : ${e.title}${placeOf(e)}.`);
 
   // The event the user means: the coming event that fits the description best.
   const findEvent = (target, now) => {
@@ -396,7 +414,7 @@ const Assistant = (() => {
     return best;
   };
 
-  const whenOf = (date, now) => `${dayName(date, now)} at ${Speech.time(date)}`;
+  const whenOf = (date, now) => `${dayName(date, now)} ${tr('at', 'à')} ${Speech.time(date)}`;
 
   const respond = async (r, text) => {
     const now = new Date();
@@ -404,46 +422,47 @@ const Assistant = (() => {
     if (r.suggest) {
       // A name close to someone known, but not exactly theirs.
       nameCheck = { text, intent: r.intent, heard: r.suggest.heard, name: r.suggest.name.replace(/^Dr\. /, '') };
-      return say(`Do you mean ${r.suggest.name}?`, { listen: true });
+      return say(tr(`Do you mean ${r.suggest.name}?`, `Voulez-vous dire ${r.suggest.name} ?`), { listen: true });
     }
 
     switch (r.intent) {
       case 'cancel_event': {
         const e = findEvent(r.target, now);
-        if (!e) return say('I did not find this in your agenda. Tell me who it is with, or which day.');
+        if (!e) return say(NOT_FOUND());
         return propose({
           say: `${e.title}, ${whenOf(e.start, now)}.`,
-          question: 'Shall I cancel it?',
+          question: tr('Shall I cancel it?', 'Je l’annule ?'),
           apply: () => { SampleData.cancelEvent(e.id); },
-          done: 'Done. It is cancelled.',
-          link: `#/agenda/${Dates.key(e.start)}`, linkText: 'Open the agenda',
+          done: tr('Done. It is cancelled.', 'C’est fait. C’est annulé.'),
+          link: `#/agenda/${Dates.key(e.start)}`, linkText: tr('Open the agenda', 'Ouvrir l’agenda'),
         });
       }
 
       case 'change_event': {
         if (r.ask) return askFor(r.ask, r.intent, text, r.asked);
         const e = findEvent(r.target, now);
-        if (!e) return say('I did not find this in your agenda. Tell me who it is with, or which day.');
+        if (!e) return say(NOT_FOUND());
         // Only the day, only the time, or only the place may change.
         const start = r.new.date ? Dates.fromKey(r.new.date) : Dates.startOfDay(e.start);
         const [h, m] = r.new.time ? r.new.time.split(':').map(Number) : [e.start.getHours(), e.start.getMinutes()];
         start.setHours(h, m, 0, 0);
         const moved = start.getTime() !== e.start.getTime();
         if (!moved && !r.new.place) {
-          return say(`${e.title} is already ${whenOf(e.start, now)}. Tell me the new day, the new time or the new place.`);
+          return say(tr(`${e.title} is already ${whenOf(e.start, now)}. Tell me the new day, the new time or the new place.`,
+            `${e.title}, c'est déjà ${whenOf(e.start, now)}. Dites-moi le nouveau jour, la nouvelle heure ou le nouveau lieu.`));
         }
         return withPlace(r.new.place, (map) => propose({
           say: `${e.title}, ${whenOf(e.start, now)}.`
-            + (moved ? ` The new time: ${whenOf(start, now)}.` : '')
-            + (r.new.place ? ` The new place: ${lower(r.new.place)}.${mapSay(map)}` : ''),
-          question: 'Shall I change it?',
-          fields: r.new.place ? [{ key: 'place', label: 'New place', value: placeName(r.new.place, map.found[firstSure(map)]) }] : [],
+            + (moved ? tr(` The new time: ${whenOf(start, now)}.`, ` Le nouveau moment : ${whenOf(start, now)}.`) : '')
+            + (r.new.place ? tr(` The new place: ${lower(r.new.place)}.`, ` Le nouveau lieu : ${lower(r.new.place)}.`) + mapSay(map) : ''),
+          question: tr('Shall I change it?', 'Je le change ?'),
+          fields: r.new.place ? [{ key: 'place', label: tr('New place', 'Nouveau lieu'), value: placeName(r.new.place, map.found[firstSure(map)]) }] : [],
           places: map.found, chosen: firstSure(map), saidPlace: r.new.place,
           apply: (v, spot) => {
             SampleData.changeEvent(e.id, { start, ...(r.new.place ? { place: v.place, ...spotOf(spot) } : {}) });
           },
-          done: 'Done. It is changed.',
-          link: `#/agenda/${Dates.key(start)}`, linkText: 'See it in the agenda',
+          done: tr('Done. It is changed.', 'C’est fait. C’est changé.'),
+          link: `#/agenda/${Dates.key(start)}`, linkText: tr('See it in the agenda', 'Le voir dans l’agenda'),
         }));
       }
 
@@ -454,10 +473,10 @@ const Assistant = (() => {
         const start = Dates.fromKey(e.date);
         start.setHours(h, m, 0, 0);
         return withPlace(e.place, (map) => propose({
-          say: `${e.title}, ${dayName(start, now)} at ${Speech.time(start)}${placeOf(e)}.${mapSay(map)}`,
+          say: `${e.title}, ${whenOf(start, now)}${placeOf(e)}.${mapSay(map)}`,
           fields: [
-            { key: 'title', label: 'What', value: e.title },
-            { key: 'place', label: 'Where', value: placeName(e.place, map.found[firstSure(map)]) },
+            { key: 'title', label: tr('What', 'Quoi'), value: e.title },
+            { key: 'place', label: tr('Where', 'Où'), value: placeName(e.place, map.found[firstSure(map)]) },
           ],
           places: map.found, chosen: firstSure(map), saidPlace: e.place || '',
           apply: (v, spot) => ({
@@ -468,45 +487,47 @@ const Assistant = (() => {
           }),
           // Someone in the event who is not known yet: offer to add them.
           next: ({ event }) => newPersonFor(event, e.people.filter((p) => !p.id).map((p) => p.name)),
-          done: 'Done. It is in your agenda.',
-          link: `#/agenda/${e.date}`, linkText: 'See it in the agenda',
+          done: tr('Done. It is in your agenda.', 'C’est fait. C’est dans votre agenda.'),
+          link: `#/agenda/${e.date}`, linkText: tr('See it in the agenda', 'Le voir dans l’agenda'),
         }));
       }
 
       case 'greet':
-        return say('Hello. Tell me what you need. For example: what do I have today?');
+        return say(tr('Hello. Tell me what you need. For example: what do I have today?',
+          "Bonjour. Dites-moi ce qu'il vous faut. Par exemple : qu'est-ce que j'ai aujourd'hui ?"));
 
       case 'add_person': {
         if (r.ask) return askFor(r.ask, r.intent, text, r.asked);
         if (r.known) {
           const p = personById(r.person.id);
-          return say(`${p.name} is already in your people: ${lower(p.relationship)}.`,
-            { link: `#/people/${p.id}`, linkText: `Open ${p.name}'s page` });
+          return say(tr(`${p.name} is already in your people: ${lower(p.relationship)}.`, `${p.name} est déjà dans vos proches : ${lower(p.relationship)}.`),
+            { link: `#/people/${p.id}`, linkText: PAGE_OF(p.name) });
         }
         const p = r.person;
         return propose({
-          say: `A new person: ${p.name}${p.relationship ? `, ${lower(p.relationship)}` : ''}.${p.origin ? ` ${p.origin}` : ''}`,
+          say: `${tr('A new person:', 'Une nouvelle personne :')} ${p.name}${p.relationship ? `, ${lower(p.relationship)}` : ''}.${p.origin ? ` ${p.origin}` : ''}`,
           // The speech model often gets a new name wrong: it can be corrected by hand.
-          fields: [{ key: 'name', label: 'Name', value: p.name }],
+          fields: [{ key: 'name', label: tr('Name', 'Nom'), value: p.name }],
           apply: (v) => {
             const added = addPerson({ ...p, name: v.name || p.name });
             about(added.name);
             if (r.connection) addConnection({ ...r.connection, a: { id: added.id, name: added.name } });
             return { link: `#/people/${added.id}` };
           },
-          done: (v) => `Done. ${v.name || p.name} is in your people. You can now tell me things to remember about ${v.name || p.name}.`,
-          link: '#/people', linkText: 'Open the page',
+          done: (v) => tr(`Done. ${v.name || p.name} is in your people. You can now tell me things to remember about ${v.name || p.name}.`,
+            `C’est fait. ${v.name || p.name} est dans vos proches. Vous pouvez maintenant me dire des choses à retenir sur ${v.name || p.name}.`),
+          link: '#/people', linkText: tr('Open the page', 'Ouvrir la page'),
         });
       }
 
       case 'update_person': {
         const u = r.update;
         return propose({
-          say: `${u.name} is ${lower(u.relationship)}.`,
-          question: 'Shall I note it?',
+          say: tr(`${u.name} is ${lower(u.relationship)}.`, `${u.name} est ${lower(u.relationship)}.`),
+          question: tr('Shall I note it?', 'Je le note ?'),
           apply: () => { SampleData.updatePerson(u.personId, { relationship: u.relationship, link: u.link }); about(u.name); },
-          done: `Done. ${u.name} is noted as ${lower(u.relationship)}.`,
-          link: `#/people/${u.personId}`, linkText: `Open ${u.name}'s page`,
+          done: tr(`Done. ${u.name} is noted as ${lower(u.relationship)}.`, `C’est fait. ${u.name} est noté : ${lower(u.relationship)}.`),
+          link: `#/people/${u.personId}`, linkText: PAGE_OF(u.name),
         });
       }
 
@@ -514,10 +535,10 @@ const Assistant = (() => {
         if (r.ask) return say(r.ask);
         const c = r.connection;
         return propose({
-          say: `A connection: ${c.text}.`,
+          say: tr(`A connection: ${c.text}.`, `Un lien : ${c.text}.`),
           apply: () => { addConnection(c); },
-          done: 'Done. I added the connection.',
-          link: '#/people/connections', linkText: 'See the connections',
+          done: tr('Done. I added the connection.', 'C’est fait. J’ai ajouté le lien.'),
+          link: '#/people/connections', linkText: tr('See the connections', 'Voir les liens'),
         });
       }
 
@@ -526,16 +547,18 @@ const Assistant = (() => {
         const memo = r.memo;
         const date = new Date();
         return propose({
-          say: memo.personId ? `A memo about ${memo.about}: ${memo.text}` : `A note: ${memo.text}`,
-          fields: [{ key: 'text', label: 'Text', value: memo.text }],
+          say: memo.personId ? tr(`A memo about ${memo.about}: ${memo.text}`, `Une note sur ${memo.about} : ${memo.text}`)
+            : tr(`A note: ${memo.text}`, `Une note : ${memo.text}`),
+          fields: [{ key: 'text', label: tr('Text', 'Texte'), value: memo.text }],
           apply: (v) => {
             const text = v.text || memo.text;
             if (memo.personId) { SampleData.add('memos', { personId: memo.personId, date, text }); about(memo.about); }
             else SampleData.add('notes', { date, subject: memo.about, text });
           },
-          done: memo.personId ? `Done. It is on ${memo.about}'s page.` : 'Done. It is in your notes of the day.',
+          done: memo.personId ? tr(`Done. It is on ${memo.about}'s page.`, `C’est fait. C’est sur la page de ${memo.about}.`)
+            : tr('Done. It is in your notes of the day.', 'C’est fait. C’est dans vos notes du jour.'),
           link: memo.personId ? `#/people/${memo.personId}` : `#/diary/${Dates.key(date)}`,
-          linkText: memo.personId ? `Open ${memo.about}'s page` : 'See the notes of the day',
+          linkText: memo.personId ? PAGE_OF(memo.about) : tr('See the notes of the day', 'Voir les notes du jour'),
         });
       }
 
@@ -546,19 +569,31 @@ const Assistant = (() => {
 
       case 'ask_time':
         return say(r.kind === 'time'
-          ? `It is ${Speech.time(now)}.`
-          : `Today is ${now.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}.`);
+          ? tr(`It is ${Speech.time(now)}.`, `Il est ${Speech.time(now)}.`)
+          : tr('Today is', 'Nous sommes le') + ` ${now.toLocaleDateString(I18n.locale, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}.`);
 
       case 'help':
-        return say('You can ask me what you have today, or who someone is. '
+        return say(tr('You can ask me what you have today, or who someone is. '
           + 'You can tell me to add, move or cancel an appointment, and to add a new person or something to remember. '
-          + 'For example: what do I have tomorrow? Or: remember that Emma won her competition.');
+          + 'For example: what do I have tomorrow? Or: remember that Emma won her competition.',
+        "Vous pouvez me demander ce que vous avez aujourd'hui, ou qui est quelqu'un. "
+          + 'Vous pouvez me dire d’ajouter, de déplacer ou d’annuler un rendez-vous, et d’ajouter une nouvelle personne ou une chose à retenir. '
+          + "Par exemple : qu'est-ce que j'ai demain ? Ou : rappelle-toi qu'Emma a gagné son concours."));
 
       default:
-        return say('I did not understand. You can say, for example: what do I have today? '
-          + 'Or: add a coffee with Sarah tomorrow at 3 pm.');
+        return say(tr('I did not understand. You can say, for example: what do I have today? '
+          + 'Or: add a coffee with Sarah tomorrow at 3 pm.',
+        "Je n'ai pas compris. Vous pouvez dire, par exemple : qu'est-ce que j'ai aujourd'hui ? "
+          + 'Ou : ajoute un café avec Sarah demain à 15 heures.'));
     }
   };
+
+  const NOT_FOUND = () => tr('I did not find this in your agenda. Tell me who it is with, or which day.',
+    "Je n'ai pas trouvé cela dans votre agenda. Dites-moi avec qui c'est, ou quel jour.");
+  const PAGE_OF = (name) => tr(`Open ${name}'s page`, `Ouvrir la page de ${name}`);
+  const PERIOD = { morning: tr('morning', 'matin'), afternoon: tr('afternoon', 'après-midi'), evening: tr('evening', 'soir') };
+  const AGENDA_LINK = () => tr('Open the agenda', 'Ouvrir l’agenda');
+  const things = (n) => (n === 1 ? tr('1 thing', '1 chose') : tr(`${n} things`, `${n} choses`));
 
   const inPeriod = (date, period) => {
     const h = date.getHours();
@@ -573,10 +608,11 @@ const Assistant = (() => {
 
     if (r.mode === 'next') {
       const next = mine.find((e) => e.start >= now);
-      if (!next) return [person ? `Nothing is planned with ${person.name}.` : 'Nothing more is planned.'];
+      if (!next) return [person ? tr(`Nothing is planned with ${person.name}.`, `Rien n'est prévu avec ${person.name}.`) : tr('Nothing more is planned.', "Rien d'autre n'est prévu.")];
+      const lead = person ? tr(`You will see ${person.name}`, `Vous verrez ${person.name}`) : tr('Your next appointment is', 'Votre prochain rendez-vous est');
       return [
-        `${person ? `You will see ${person.name}` : 'Your next appointment is'} ${dayName(next.start, now)}. ${eventLine(next)}${next.note ? ` ${next.note}` : ''}`,
-        { link: `#/agenda/${Dates.key(next.start)}`, linkText: 'Open the agenda' },
+        `${lead} ${dayName(next.start, now)}. ${eventLine(next)}${next.note ? ` ${next.note}` : ''}`,
+        { link: `#/agenda/${Dates.key(next.start)}`, linkText: AGENDA_LINK() },
       ];
     }
 
@@ -584,19 +620,24 @@ const Assistant = (() => {
       const start = Dates.fromKey(r.date);
       const end = Dates.addDays(start, 7);
       const list = mine.filter((e) => e.start >= start && e.start < end && e.start >= Dates.startOfDay(now));
-      if (!list.length) return ['Nothing is planned in the next seven days.'];
-      const lines = list.map((e) => `${Dates.relative(e.start, now)}, at ${Speech.time(e.start)}: ${e.title}.`);
-      return [`You have ${list.length} ${list.length === 1 ? 'thing' : 'things'} planned. ${lines.join(' ')}`,
-        { link: `#/agenda/${r.date}`, linkText: 'Open the agenda' }];
+      if (!list.length) return [tr('Nothing is planned in the next seven days.', "Rien n'est prévu dans les sept prochains jours.")];
+      const lines = list.map((e) => tr(`${Dates.relative(e.start, now)}, at ${Speech.time(e.start)}: ${e.title}.`,
+        `${Dates.relative(e.start, now)}, à ${Speech.time(e.start)} : ${e.title}.`));
+      return [tr(`You have ${things(list.length)} planned.`, `Vous avez ${things(list.length)} de prévu.`) + ` ${lines.join(' ')}`,
+        { link: `#/agenda/${r.date}`, linkText: AGENDA_LINK() }];
     }
 
     const day = Dates.fromKey(r.date);
     const list = mine.filter((e) => Dates.sameDay(e.start, day) && inPeriod(e.start, r.period));
-    const when = `${Dates.relative(day, now)}${r.period ? ` ${r.period}` : ''}`;
-    const link = { link: `#/agenda/${r.date}`, linkText: 'Open the agenda' };
-    if (!list.length) return [`${when === Dates.long(day) ? `On ${when}` : when}, nothing is planned${person ? ` with ${person.name}` : ''}.`, link];
+    const relative = Dates.relative(day, now);
+    const dated = relative === Dates.long(day);
+    const when = `${dated ? tr(`On ${relative}`, `Le ${relative.toLowerCase()}`) : relative}${r.period ? ` ${PERIOD[r.period] || r.period}` : ''}`;
+    const link = { link: `#/agenda/${r.date}`, linkText: AGENDA_LINK() };
+    if (!list.length) {
+      return [tr(`${when}, nothing is planned${person ? ` with ${person.name}` : ''}.`, `${when}, rien n'est prévu${person ? ` avec ${person.name}` : ''}.`), link];
+    }
     return [
-      `${when === Dates.long(day) ? `On ${when}` : when}, you have ${list.length} ${list.length === 1 ? 'thing' : 'things'}. ${list.map(eventLine).join(' ')}`,
+      tr(`${when}, you have ${things(list.length)}.`, `${when}, vous avez ${things(list.length)}.`) + ` ${list.map(eventLine).join(' ')}`,
       link,
     ];
   };
@@ -605,8 +646,11 @@ const Assistant = (() => {
     const day = Dates.fromKey(r.date);
     const entries = diary.filter((d) => Dates.sameDay(d.date, day));
     const when = Dates.relative(day, now);
-    const link = { link: `#/diary/${r.date}`, linkText: 'Open the diary' };
-    if (!entries.length) return [`Nothing was written for ${when === Dates.long(day) ? when : lower(when)}.`, link];
+    const link = { link: `#/diary/${r.date}`, linkText: tr('Open the diary', 'Ouvrir le journal') };
+    if (!entries.length) {
+      return [tr(`Nothing was written for ${when === Dates.long(day) ? when : lower(when)}.`,
+        `Rien n'a été écrit pour ${when === Dates.long(day) ? `le ${when.toLowerCase()}` : when.toLowerCase()}.`), link];
+    }
     return [`${when}. ${entries.map((d) => d.text).join(' ')}`, link];
   };
 
@@ -614,39 +658,42 @@ const Assistant = (() => {
     const p = r.personId && personById(r.personId);
     if (!p) {
       return [r.unknownName
-        ? `I do not know ${r.unknownName} yet. You can say: add a new person called ${r.unknownName}.`
-        : 'I am not sure who you mean. Say the name again, for example: who is Rose?'];
+        ? tr(`I do not know ${r.unknownName} yet. You can say: add a new person called ${r.unknownName}.`,
+          `Je ne connais pas encore ${r.unknownName}. Vous pouvez dire : ajoute une nouvelle personne qui s'appelle ${r.unknownName}.`)
+        : tr('I am not sure who you mean. Say the name again, for example: who is Rose?',
+          'Je ne suis pas sûr de qui vous parlez. Redites le nom, par exemple : qui est Rose ?')];
     }
     about(p.name);
-    const link = { link: `#/people/${p.id}`, linkText: `Open ${p.name}'s page` };
+    const link = { link: `#/people/${p.id}`, linkText: PAGE_OF(p.name) };
+    const is = (person) => tr(`${person.name} is ${lower(person.relationship)}.`, `${person.name} est ${lower(person.relationship)}.`);
     const news = memos.filter((m) => m.personId === p.id).sort((a, b) => b.date - a.date);
     const links = connections.filter((c) => c.a === p.id || c.b === p.id)
-      .map((c) => c.text || `${personById(c.a)?.name} and ${personById(c.b)?.name}: ${c.label}`);
+      .map((c) => c.text || `${personById(c.a)?.name} ${tr('and', 'et')} ${personById(c.b)?.name} : ${c.label}`);
 
     if (r.topic === 'news') {
       return [news.length
-        ? `The latest news about ${p.name}. ${news.slice(0, 2).map((m) => m.text).join(' ')}`
-        : `I have no news about ${p.name} yet.`, link];
+        ? tr(`The latest news about ${p.name}.`, `Les dernières nouvelles de ${p.name}.`) + ` ${news.slice(0, 2).map((m) => m.text).join(' ')}`
+        : tr(`I have no news about ${p.name} yet.`, `Je n'ai pas encore de nouvelles de ${p.name}.`), link];
     }
     if (r.topic === 'origin') {
       return [p.origin || links.length
-        ? `${p.name} is ${lower(p.relationship)}. ${p.origin || ''} ${links.join('. ')}`
-        : `${p.name} is ${lower(p.relationship)}. I do not know yet how you met.`, link];
+        ? `${is(p)} ${p.origin || ''} ${links.join('. ')}`
+        : `${is(p)} ${tr('I do not know yet how you met.', 'Je ne sais pas encore comment vous vous êtes connus.')}`, link];
     }
     const next = events.filter((e) => e.personIds.includes(p.id) && e.start >= now).sort((a, b) => a.start - b.start)[0];
     return [
-      `${p.name} is ${lower(p.relationship)}. ${p.origin || ''} ${news.length ? `Latest news: ${news[0].text}` : ''}`
-      + (next ? ` You will see ${p.name} ${dayName(next.start, now)} at ${Speech.time(next.start)}.` : ''),
+      `${is(p)} ${p.origin || ''} ${news.length ? `${tr('Latest news:', 'Dernières nouvelles :')} ${news[0].text}` : ''}`
+      + (next ? tr(` You will see ${p.name} ${whenOf(next.start, now)}.`, ` Vous verrez ${p.name} ${whenOf(next.start, now)}.`) : ''),
       link,
     ];
   };
 
   const searchAnswer = (query) => {
     const words = query.toLowerCase().split(/[^a-z0-9à-ÿ]+/).filter((w) => w.length > 2);
-    if (!words.length) return ['Tell me what to look for, for example: search for the radiator.'];
+    if (!words.length) return [tr('Tell me what to look for, for example: search for the radiator.', 'Dites-moi ce que je dois chercher, par exemple : cherche le radiateur.')];
 
     const items = [
-      ...people.map((p) => ({ text: `${p.name} is ${lower(p.relationship)}. ${p.origin || ''}`, hay: [p.name, p.relationship, p.origin, ...(p.facts || [])], link: `#/people/${p.id}` })),
+      ...people.map((p) => ({ text: `${tr(`${p.name} is`, `${p.name} est`)} ${lower(p.relationship)}. ${p.origin || ''}`, hay: [p.name, p.relationship, p.origin, ...(p.facts || [])], link: `#/people/${p.id}` })),
       ...memos.map((m) => ({ text: m.text, hay: [m.text, personById(m.personId)?.name], link: `#/people/${m.personId}`, date: m.date })),
       ...notes.map((n) => ({ text: n.text, hay: [n.subject, n.text], link: `#/diary/${Dates.key(n.date)}`, date: n.date })),
       ...diary.map((d) => ({ text: `${Dates.long(d.date)}: ${d.text}`, hay: [d.text], link: `#/diary/${Dates.key(d.date)}`, date: d.date })),
@@ -660,7 +707,7 @@ const Assistant = (() => {
       .filter((item) => item.score > 0)
       .sort((a, b) => b.score - a.score || (b.date || 0) - (a.date || 0));
 
-    if (!found.length) return [`I found nothing about ${query}.`];
+    if (!found.length) return [tr(`I found nothing about ${query}.`, `Je n'ai rien trouvé sur ${query}.`)];
     const top = found.slice(0, 3);
     // From a long text, only the sentences that contain a searched word are read.
     const relevant = (text) => {
@@ -669,8 +716,8 @@ const Assistant = (() => {
       return (hits.length ? hits : sentences.slice(0, 1)).join(' ').trim();
     };
     return [
-      `I found ${found.length} ${found.length === 1 ? 'thing' : 'things'} about ${query}. ${top.map((f) => relevant(f.text)).join(' ')}`,
-      { link: top[0].link, linkText: 'Open the first one' },
+      tr(`I found ${things(found.length)} about ${query}.`, `J'ai trouvé ${things(found.length)} sur ${query}.`) + ` ${top.map((f) => relevant(f.text)).join(' ')}`,
+      { link: top[0].link, linkText: tr('Open the first one', 'Ouvrir le premier') },
     ];
   };
 
@@ -678,9 +725,9 @@ const Assistant = (() => {
 
   const addPerson = (p) => SampleData.add('people', {
     name: p.name,
-    relationship: p.relationship || 'Someone you know',
+    relationship: p.relationship || tr('Someone you know', 'Quelqu’un que vous connaissez'),
     // On the map: "niece" for the user's own niece, "Rose's daughter" for someone known through Rose.
-    link: p.relationship && !/^Your /.test(p.relationship) ? p.relationship : p.link || '',
+    link: p.relationship && !/^(Your|Votre|Vos) /.test(p.relationship) ? p.relationship : p.link || '',
     origin: p.origin || '',
     color: COLORS[people.length % COLORS.length],
     photo: null,
@@ -693,9 +740,9 @@ const Assistant = (() => {
     const [name, ...others] = names.filter((n) => !people.some((p) => p.name.toLowerCase() === n.toLowerCase()));
     if (!name) return null;
     return {
-      say: `${name} is not in your people yet.`,
-      question: `Shall I add ${name}?`,
-      fields: [{ key: 'name', label: 'Name', value: name }],
+      say: tr(`${name} is not in your people yet.`, `${name} n'est pas encore dans vos proches.`),
+      question: tr(`Shall I add ${name}?`, `J'ajoute ${name} ?`),
+      fields: [{ key: 'name', label: tr('Name', 'Nom'), value: name }],
       apply: (v) => {
         const added = addPerson({ name: v.name || name });
         about(added.name);
@@ -704,8 +751,9 @@ const Assistant = (() => {
         return { link: `#/people/${added.id}`, event: kept };
       },
       next: (result) => newPersonFor(result.event, others),
-      done: (v) => `Done. ${v.name || name} is in your people. Tell me who ${v.name || name} is, for example: ${v.name || name} is my friend.`,
-      link: '#/people', linkText: 'Open the page',
+      done: (v) => tr(`Done. ${v.name || name} is in your people. Tell me who ${v.name || name} is, for example: ${v.name || name} is my friend.`,
+        `C’est fait. ${v.name || name} est dans vos proches. Dites-moi qui est ${v.name || name}, par exemple : ${v.name || name} est mon amie.`),
+      link: '#/people', linkText: tr('Open the page', 'Ouvrir la page'),
     };
   };
 
@@ -722,7 +770,8 @@ const Assistant = (() => {
   // ---- Screen ----
 
   const LABELS = {
-    idle: 'Talk to me', listening: 'I am listening…', thinking: 'One moment…', speaking: 'Tap to stop',
+    idle: tr('Talk to me', 'Parlez-moi'), listening: tr('I am listening…', 'Je vous écoute…'),
+    thinking: tr('One moment…', 'Un instant…'), speaking: tr('Tap to stop', 'Touchez pour arrêter'),
   };
 
   const view = () => '<section id="assistant" class="assistant"></section>';
@@ -745,9 +794,11 @@ const Assistant = (() => {
         ${Icons.icon(phase === 'speaking' ? 'speaker' : 'mic', 'talk-icon')}
       </button>
       <p class="talk-label">${LABELS[phase]}</p>
-      ${phase === 'idle' && !log.length ? '<p class="talk-hint">Tap the button, then ask or tell me something.</p>' : ''}
-      ${Speech.noEnglish() ? `<p class="source">This device has no English voice, so the app speaks English with the voice of
-        another language. On Windows: Settings, Time and language, Speech, Add voices, English. Or use Chrome, which brings its own.</p>` : ''}
+      ${phase === 'idle' && !log.length ? `<p class="talk-hint">${tr('Tap the button, then ask or tell me something.', 'Touchez le bouton, puis demandez-moi ou dites-moi quelque chose.')}</p>` : ''}
+      ${Speech.noVoice() ? `<p class="source">${tr(`This device has no English voice, so the app speaks English with the voice of
+        another language. On Windows: Settings, Time and language, Speech, Add voices, English. Or use Chrome, which brings its own.`,
+        `Cet appareil n'a pas de voix française : l'application parle français avec la voix d'une autre langue.
+        Sous Windows : Paramètres, Heure et langue, Voix, Ajouter des voix, Français. Ou utilisez Chrome, qui a les siennes.`)}</p>` : ''}
 
       <div class="exchange" aria-live="polite">
         ${lines}
@@ -759,63 +810,53 @@ const Assistant = (() => {
           ${confirm.fields.map((f, i) => `
             <label>${esc(f.label)}
               <input type="text" data-field="${i}" value="${esc(f.value)}" autocomplete="off"></label>`).join('')}
-          <p class="source">You can correct the words here before saying yes.</p>
+          <p class="source">${tr('You can correct the words here before saying yes.', 'Vous pouvez corriger les mots ici avant de dire oui.')}</p>
         </div>` : ''}
 
       ${confirm && confirm.places && confirm.places.length && phase !== 'thinking' ? `
         <div class="confirm-places">
-          <p class="confirm-places-title">On the map</p>
+          <p class="confirm-places-title">${tr('On the map', 'Sur la carte')}</p>
           ${confirm.places.map((s, i) => `
             <button class="place-choice${i === confirm.chosen ? ' chosen' : ''}" type="button" data-place="${i}" aria-pressed="${i === confirm.chosen}">
               <strong>${esc(s.name)}</strong>
               <span>${esc([s.address, Places.far(s.km)].filter(Boolean).join(' · '))}</span>
             </button>`).join('')}
           <button class="place-choice${confirm.chosen < 0 ? ' chosen' : ''}" type="button" data-place="-1" aria-pressed="${confirm.chosen < 0}">
-            <strong>None of these</strong>
-            <span>Keep the place as I said it</span>
+            <strong>${tr('None of these', 'Aucun de ceux-ci')}</strong>
+            <span>${tr('Keep the place as I said it', 'Garder le lieu comme je l’ai dit')}</span>
           </button>
-          ${confirm.chosen >= 0 ? `<a class="said-link" href="${esc(Places.mapLink(confirm.places[confirm.chosen]))}" target="_blank" rel="noopener">Show it on the map</a>` : ''}
+          ${confirm.chosen >= 0 ? `<a class="said-link" href="${esc(Places.mapLink(confirm.places[confirm.chosen]))}" target="_blank" rel="noopener">${tr('Show it on the map', 'Le voir sur la carte')}</a>` : ''}
         </div>` : ''}
 
       ${(confirm || nameCheck) && phase !== 'thinking' ? `
         <div class="confirm">
-          <button class="button primary big" type="button" data-answer="yes">Yes</button>
-          <button class="button big" type="button" data-answer="no">No</button>
+          <button class="button primary big" type="button" data-answer="yes">${tr('Yes', 'Oui')}</button>
+          <button class="button big" type="button" data-answer="no">${tr('No', 'Non')}</button>
         </div>` : ''}
 
       ${review && phase === 'idle' ? reviewCard() : ''}
 
       <details class="examples">
-        <summary>What can I say?</summary>
-        <ul>
-          <li>“What do I have today?”</li>
-          <li>“When do I see Sarah?”</li>
-          <li>“Who is Rose?” or “How do I know Paul?”</li>
-          <li>“I plan to go to the market tomorrow at 10.”</li>
-          <li>“Move the lunch with Sarah to 1 pm.”</li>
-          <li>“Cancel my appointment with the doctor.”</li>
-          <li>“Add a new person, her name is Julie, she is my niece.”</li>
-          <li>“Julie is Sarah's daughter.”</li>
-          <li>“Remember that Emma won her competition.”</li>
-          <li>“Search for the radiator.”</li>
-          <li>“What did I do yesterday?”</li>
-        </ul>
+        <summary>${tr('What can I say?', 'Que puis-je dire ?')}</summary>
+        <ul>${EXAMPLES().map((x) => `<li>“${esc(x)}”</li>`).join('')}</ul>
         <form id="assistant-type" class="assistant-type">
-          <label for="assistant-box">Or write it</label>
-          <div><input id="assistant-box" type="text" autocomplete="off"><button class="button" type="submit">Send</button></div>
+          <label for="assistant-box">${tr('Or write it', 'Ou écrivez-le')}</label>
+          <div><input id="assistant-box" type="text" autocomplete="off"><button class="button" type="submit">${tr('Send', 'Envoyer')}</button></div>
         </form>
         <label class="improve-switch">
           <input id="improve-switch" type="checkbox"${improve ? ' checked' : ''}>
-          Improvement mode: after each request, ask me if it did what I wanted
+          ${tr('Improvement mode: after each request, ask me if it did what I wanted',
+            'Mode amélioration : après chaque demande, me demander si l’application a fait ce que je voulais')}
         </label>
         <label class="improve-switch">
           <input id="keep-switch" type="checkbox"${keepSound ? ' checked' : ''}>
-          Keep the sound of my voice when I talk to the app, to measure how well it hears me.
-          It stays on the computer that runs Near.
+          ${tr('Keep the sound of my voice when I talk to the app, to measure how well it hears me. It stays on the computer that runs Near.',
+            'Garder le son de ma voix quand je parle à l’application, pour mesurer si elle m’entend bien. Il reste sur l’ordinateur où tourne Near.')}
         </label>
         ${Places.town() ? `
-          <p class="source">Places are looked for around ${esc(Places.town().name)} when this device does not give its position.
-            <button class="link-button" type="button" id="forget-town">Forget this town</button></p>` : ''}
+          <p class="source">${tr(`Places are looked for around ${esc(Places.town().name)} when this device does not give its position.`,
+            `Les lieux sont cherchés autour de ${esc(Places.town().name)} quand cet appareil ne donne pas sa position.`)}
+            <button class="link-button" type="button" id="forget-town">${tr('Forget this town', 'Oublier cette ville')}</button></p>` : ''}
       </details>`;
 
     if ($('review-box')) $('review-box').value = comment;
@@ -831,20 +872,34 @@ const Assistant = (() => {
 
   let examplesOpen = false;
 
+  const EXAMPLES = () => tr([
+    'What do I have today?', 'When do I see Sarah?', 'Who is Rose? or How do I know Paul?',
+    'I plan to go to the market tomorrow at 10.', 'Move the lunch with Sarah to 1 pm.',
+    'Cancel my appointment with the doctor.', 'Add a new person, her name is Julie, she is my niece.',
+    "Julie is Sarah's daughter.", 'Remember that Emma won her competition.', 'Search for the radiator.',
+    'What did I do yesterday?',
+  ], [
+    "Qu'est-ce que j'ai aujourd'hui ?", 'Quand est-ce que je vois Sarah ?', 'Qui est Rose ? ou Comment je connais Paul ?',
+    'Je vais au marché demain à 10 heures.', 'Déplace le déjeuner avec Sarah à 13 heures.',
+    'Annule mon rendez-vous chez le médecin.', 'Ajoute une nouvelle personne, elle s’appelle Julie, c’est ma nièce.',
+    'Julie est la fille de Sarah.', 'Rappelle-toi qu’Emma a gagné son concours.', 'Cherche le radiateur.',
+    "Qu'est-ce que j'ai fait hier ?",
+  ]);
+
   const reviewCard = () => {
-    if (review.state === 'thanks') return '<p class="review thanks">Thank you, it is noted.</p>';
+    if (review.state === 'thanks') return `<p class="review thanks">${tr('Thank you, it is noted.', 'Merci, c’est noté.')}</p>`;
     return `
       <div class="review">
-        <p class="review-question">Did I do what you wanted?</p>
+        <p class="review-question">${tr('Did I do what you wanted?', 'Ai-je fait ce que vous vouliez ?')}</p>
         ${review.state === 'explain' ? `
           <form id="review-form" class="review-form">
-            <label for="review-box">What did you want?</label>
+            <label for="review-box">${tr('What did you want?', 'Que vouliez-vous ?')}</label>
             <textarea id="review-box" rows="3"></textarea>
-            <button class="button primary" type="submit">Send</button>
+            <button class="button primary" type="submit">${tr('Send', 'Envoyer')}</button>
           </form>` : `
           <div class="review-buttons">
-            <button class="button big review-yes" type="button" data-review="yes">Yes, it did what I wanted</button>
-            <button class="button big review-no" type="button" data-review="no">No</button>
+            <button class="button big review-yes" type="button" data-review="yes">${tr('Yes, it did what I wanted', 'Oui, c’est ce que je voulais')}</button>
+            <button class="button big review-no" type="button" data-review="no">${tr('No', 'Non')}</button>
           </div>`}
       </div>`;
   };

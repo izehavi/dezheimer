@@ -14,8 +14,10 @@ import threading
 import numpy as np
 
 # English-only models, by size: tiny.en (39 M), base.en (74 M), small.en (244 M).
-# For other languages, drop the ".en".
+# For other languages, drop the ".en": the same sizes, for every language.
 MODEL_NAME = os.environ.get("DEZHEIMER_ASR_MODEL", "openai/whisper-small.en")
+# French: a model for every language, told to hear French. The same size as the English one.
+MODEL_NAMES = {"en": MODEL_NAME, "fr": os.environ.get("DEZHEIMER_ASR_MODEL_FR", "openai/whisper-small")}
 MAX_VOCABULARY_CHARS = 600
 SAMPLE_RATE = 16000
 MAX_SECONDS = 30  # Whisper reads at most 30 seconds at a time.
@@ -25,8 +27,9 @@ _NON_SPEECH = re.compile(r"^\s*[\[\(].*[\]\)]\s*$")
 
 
 class Transcriber:
-    def __init__(self, model_name: str = MODEL_NAME):
+    def __init__(self, model_name: str = MODEL_NAME, language: str = "en"):
         self.model_name = model_name
+        self.language = language
         self.ready = False
         self.error = None
         self.device = None
@@ -79,7 +82,7 @@ class Transcriber:
             options = {}
             if getattr(self._model.generation_config, "is_multilingual", not self.model_name.endswith(".en")):
                 # A model for every language must be told which one, or it guesses from the accent.
-                options.update(language="en", task="transcribe")
+                options.update(language=self.language, task="transcribe")
             vocabulary = vocabulary.strip()[:MAX_VOCABULARY_CHARS]
             if vocabulary:
                 # Whisper reads this as what was said just before: it then prefers these spellings.
@@ -96,6 +99,19 @@ class Transcriber:
                 text = text[len(vocabulary):].strip()   # some versions return the prompt with the answer
 
         return "" if _NON_SPEECH.match(text) else text
+
+
+_by_language = {}
+_by_language_lock = threading.Lock()
+
+
+def for_language(language: str) -> Transcriber:
+    """The speech model of a language ("en" or "fr"). Each is loaded the first time it is used."""
+    language = language if language in MODEL_NAMES else "en"
+    with _by_language_lock:
+        if language not in _by_language:
+            _by_language[language] = Transcriber(MODEL_NAMES[language], language)
+        return _by_language[language]
 
 
 def _resample(audio: np.ndarray, sample_rate: int) -> np.ndarray:

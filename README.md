@@ -12,6 +12,14 @@ Near listens to daily life, writes down what happened, and turns it into three t
 
 > **Status:** first version of the whole chain, on example data: a voice assistant that adds events, people, connections and memos and answers questions aloud; spoken reminders; a connections map; and a language model that proposes diary summaries and memos from a recorded conversation. The assistant has been used by voice on a computer and on an iPhone, by the developer only; misheard words are its main weakness. The language model still misses about half of the news. See [CHECKPOINT.md](CHECKPOINT.md) for where we are and [GUIDELINE.md](GUIDELINE.md) for the full plan.
 
+## English or French
+
+Near speaks English and French. The first screen offers **English | Français**; the choice can be changed later under **Account**. The first time, the app takes the language of the phone. In French, everything is in French: the screens, the voice of the app (a French voice of the device), the example (Hélène and her family), the model that writes down what is said (`openai/whisper-small`, which knows French, in place of the English-only one), the understanding of requests (a sentence model made for many languages, with French examples and French rules for days, times, people and places), the reminders and the notifications, the directions of a walk, and the texts to read aloud. The app speaks to the person as "vous". A relative can use another language than the person: each phone gets its notifications in its own language.
+
+Requests that work in French, for example: « Qu'est-ce que j'ai aujourd'hui ? », « Ajoute un café avec Sarah demain à 15 heures au café Carmel », « Déplace le déjeuner avec Sarah à 13 heures », « Annule mon rendez-vous chez le médecin », « Qui est Rose ? », « Comment je connais Paul ? », « Ajoute une nouvelle personne, elle s'appelle Julie, c'est ma nièce », « Julie est la fille de Sarah », « Rappelle-toi qu'Emma a gagné son concours », « Est-ce que j'ai pris mes médicaments du matin ? », « La case est vide », « Je veux faire une omelette ».
+
+The first French request after the server starts takes a few seconds more: the French models are loaded then.
+
 ## Try it
 
 Double-click [start.bat](start.bat). It needs Python 3.12 and Windows. The language model needs an NVIDIA graphics card with 8 GB of memory.

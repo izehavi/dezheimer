@@ -132,7 +132,33 @@ def _is_named(person, transcript):
     return bool(difflib.get_close_matches(name, words, n=1, cutoff=0.8))
 
 
-def understand(text, people, user_name="Helen", ask=None):
+# For a conversation in French: what to add to the rules, and an example in French.
+FRENCH_RULE = (
+    "\n- The transcript is in French. Write \"summary\" and \"news\" in French, and speak to {user} with \"vous\". "
+    "\"quote\" stays the exact French words of the transcript."
+)
+FRENCH_EXAMPLES = [
+    (
+        "Allô, c'est Marc. Comment ça va ? Très bien merci. Je passe te chercher mardi à 10 heures pour le dentiste. "
+        "D'accord. Tu sais, Julie a eu son permis la semaine dernière, et elle s'est acheté une petite voiture rouge. Oh, c'est bien. "
+        "Et la machine à laver est cassée, le réparateur a dit qu'il en faut une neuve. Bon. Allez, bonne journée. Toi aussi.",
+        {
+            "summary": "Marc vous a appelée. Il passera vous chercher mardi à 10 heures pour le dentiste. "
+                       "Il vous a dit que Julie a eu son permis et que la machine à laver est cassée.",
+            "memos": [
+                {"about": "Julie", "news": "Julie a eu son permis de conduire la semaine dernière.",
+                 "quote": "Julie a eu son permis la semaine dernière"},
+                {"about": "Julie", "news": "Julie s'est acheté une petite voiture rouge.",
+                 "quote": "elle s'est acheté une petite voiture rouge"},
+                {"about": "Machine à laver", "news": "La machine à laver est cassée et doit être remplacée.",
+                 "quote": "la machine à laver est cassée, le réparateur a dit qu'il en faut une neuve"},
+            ],
+        },
+    ),
+]
+
+
+def understand(text, people, user_name="Helen", ask=None, lang="en"):
     """Return {"summary", "memos", "rejected", "seconds", "model"} for a transcript.
 
     `people` are the known people: dicts with "id", "name" and optionally "relationship".
@@ -141,14 +167,16 @@ def understand(text, people, user_name="Helen", ask=None):
     """
     ask = ask or reader.ask
     text = text.strip()[-MAX_TRANSCRIPT_CHARS:]
+    french = lang == "fr"
     known = ", ".join(
-        f"{p['name']} ({re.sub(r'^your ', '', (p.get('relationship') or 'known person').lower())})"
+        f"{p['name']} ({re.sub(r'^(?:your|votre|vos) ', '', (p.get('relationship') or 'known person').lower())})"
         for p in people
     ) or "nobody yet"
 
     started = time.time()
-    messages = [{"role": "system", "content": SYSTEM_PROMPT.format(user=user_name, people=known)}]
-    for example, expected in EXAMPLES:
+    rules = SYSTEM_PROMPT.format(user=user_name, people=known) + (FRENCH_RULE.format(user=user_name) if french else "")
+    messages = [{"role": "system", "content": rules}]
+    for example, expected in (FRENCH_EXAMPLES if french else EXAMPLES):
         messages.append({"role": "user", "content": f"Transcript:\n{example}"})
         messages.append({"role": "assistant", "content": json.dumps(expected, indent=1)})
     messages.append({"role": "user", "content": f"Transcript:\n{text}"})

@@ -32,7 +32,7 @@ const Routine = (() => {
     let zone = null;
     try { zone = Intl.DateTimeFormat().resolvedOptions().timeZone || null; } catch { /* the offset is enough */ }
     await Account.api('PUT', 'routine', {
-      name: SampleData.user.name, tasks, done, days, zone, offset: -now.getTimezoneOffset(),
+      name: SampleData.user.name, tasks, done, days, zone, offset: -now.getTimezoneOffset(), lang: I18n.lang,
     }).catch(() => {});
   };
 
@@ -45,16 +45,18 @@ const Routine = (() => {
   // ---- On "My day": reminders when the app is closed ----
 
   const PUSH = {
-    on: 'Reminders come even when Near is closed.',
-    off: 'Reminders only come while Near is open.',
-    denied: 'Notifications are refused for Near on this phone. Allow them in the settings of the phone.',
-    unsupported: 'To be reminded when Near is closed, on an iPhone: in Safari, tap Share, then "Add to Home Screen", and open Near from its icon.',
-    error: 'This did not work. The Near server may not be reachable.',
+    on: tr('Reminders come even when Near is closed.', 'Les rappels arrivent même quand Near est fermé.'),
+    off: tr('Reminders only come while Near is open.', 'Les rappels n’arrivent que quand Near est ouvert.'),
+    denied: tr('Notifications are refused for Near on this phone. Allow them in the settings of the phone.',
+      'Les notifications sont refusées pour Near sur ce téléphone. Autorisez-les dans les réglages du téléphone.'),
+    unsupported: tr('To be reminded when Near is closed, on an iPhone: in Safari, tap Share, then "Add to Home Screen", and open Near from its icon.',
+      'Pour avoir les rappels quand Near est fermé, sur un iPhone : dans Safari, touchez Partager, puis « Sur l’écran d’accueil », et ouvrez Near depuis son icône.'),
+    error: tr('This did not work. The Near server may not be reachable.', 'Ça n’a pas marché. Le serveur de Near est peut-être injoignable.'),
   };
 
   const pushCard = () => (Relatives.role() === 'person' && Account.signedIn() ? `
     <section>
-      <h2>Reminders</h2>
+      <h2>${tr('Reminders', 'Rappels')}</h2>
       <div id="routine-push"><p class="card">…</p></div>
     </section>` : '');
 
@@ -63,7 +65,7 @@ const Routine = (() => {
     if (!box || !pushState) return;
     box.innerHTML = `<div class="card"><p>${esc(PUSH[pushState])}</p></div>
       ${pushState === 'on' || pushState === 'unsupported' ? ''
-        : '<p class="page-action"><button class="button primary" type="button" data-routine-push>Remind me even when it is closed</button></p>'}`;
+        : `<p class="page-action"><button class="button primary" type="button" data-routine-push>${tr('Remind me even when it is closed', 'Me rappeler même quand c’est fermé')}</button></p>`}`;
   };
 
   const mount = async () => {

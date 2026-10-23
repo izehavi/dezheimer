@@ -38,11 +38,11 @@ const Views = (() => {
           <h3>${esc(e.title)}</h3>
           <p class="event-place">${esc(e.place)}</p>
           ${e.address ? `<p class="event-address">${esc(e.address)}</p>` : ''}
-          ${e.lat ? `<a class="event-map" href="${esc(Places.mapLink(e))}" target="_blank" rel="noopener">Show on the map</a>` : ''}
+          ${e.lat ? `<a class="event-map" href="${esc(Places.mapLink(e))}" target="_blank" rel="noopener">${tr('Show on the map', 'Voir sur la carte')}</a>` : ''}
           ${Walk.button(e, now)}
           ${e.note ? `<p class="event-note">${esc(e.note)}</p>` : ''}
           ${chips(e.personIds)}
-          ${e.added ? `<p class="added-tag">Added by voice ${removeButton('events', e)}</p>` : ''}
+          ${e.added ? `<p class="added-tag">${tr('Added by voice', 'Ajouté à la voix')} ${removeButton('events', e)}</p>` : ''}
         </div>
       </article>`;
   };
@@ -51,16 +51,15 @@ const Views = (() => {
 
   // Only what was added from the Listen screen can be removed.
   const removeButton = (kind, item) => (item.added
-    ? `<button class="link-button" type="button" data-remove="${kind}:${esc(item.id)}">Remove</button>`
+    ? `<button class="link-button" type="button" data-remove="${kind}:${esc(item.id)}">${tr('Remove', 'Retirer')}</button>`
     : '');
 
   // ---- Home ----
 
   const greeting = (now) => {
     const h = now.getHours();
-    if (h < 12) return 'Good morning';
-    if (h < 18) return 'Good afternoon';
-    return 'Good evening';
+    if (h < 18) return h < 12 ? tr('Good morning', 'Bonjour') : tr('Good afternoon', 'Bonjour');
+    return tr('Good evening', 'Bonsoir');
   };
 
   const home = ({ now }) => {
@@ -73,7 +72,7 @@ const Views = (() => {
         <p class="brand"><img src="near-mark.png" alt=""><span>Near</span></p>
         <p class="hello-date">${esc(Dates.long(now))}</p>
         <h1>${greeting(now)}, ${esc(user.name)}</h1>
-        <p class="hello-time">It is ${esc(Dates.time(now))}</p>
+        <p class="hello-time">${tr('It is', 'Il est')} ${esc(Dates.time(now))}</p>
       </header>
 
       ${Walk.homeBlock()}
@@ -83,26 +82,26 @@ const Views = (() => {
       ${Day.homeBlock(now)}
 
       <section>
-        <h2>Coming next</h2>
-        ${next ? eventCard(next, now, { highlight: true }) : empty('Nothing else is planned today.')}
+        <h2>${tr('Coming next', 'Ensuite')}</h2>
+        ${next ? eventCard(next, now, { highlight: true }) : empty(tr('Nothing else is planned today.', "Rien d'autre n'est prévu aujourd'hui."))}
       </section>
 
       <section>
-        <h2>Your day</h2>
-        ${todays.length ? todays.map((e) => eventCard(e, now)).join('') : empty('Nothing is planned today.')}
+        <h2>${tr('Your day', 'Votre journée')}</h2>
+        ${todays.length ? todays.map((e) => eventCard(e, now)).join('') : empty(tr('Nothing is planned today.', "Rien n'est prévu aujourd'hui."))}
       </section>
 
       ${yesterday ? `
       <section>
-        <h2>Yesterday</h2>
+        <h2>${tr('Yesterday', 'Hier')}</h2>
         <a class="card link-card" href="#/diary/${Dates.key(yesterday.date)}">
           <p>${esc(yesterday.text)}</p>
-          <span class="more">Open the diary</span>
+          <span class="more">${tr('Open the diary', 'Ouvrir le journal')}</span>
         </a>
       </section>` : ''}
 
-      <p class="page-action account-link"><a href="#/read">Teach the app my voice</a></p>
-      <p class="account-link"><a href="#/account">Account, backup and my own data</a></p>`;
+      <p class="page-action account-link"><a href="#/read">${tr('Teach the app my voice', 'Apprendre ma voix à l’application')}</a></p>
+      <p class="account-link"><a href="#/account">${tr('Account, language and my own data', 'Compte, langue et mes propres données')}</a></p>`;
   };
 
   // ---- Agenda ----
@@ -135,16 +134,16 @@ const Views = (() => {
       </header>
 
       <div class="week-nav">
-        <a class="button" href="#/agenda/${Dates.key(Dates.addDays(selected, -7))}">← Week before</a>
-        ${Dates.sameDay(selected, now) ? '' : '<a class="button primary" href="#/agenda">Back to today</a>'}
-        <a class="button" href="#/agenda/${Dates.key(Dates.addDays(selected, 7))}">Week after →</a>
+        <a class="button" href="#/agenda/${Dates.key(Dates.addDays(selected, -7))}">← ${tr('Week before', 'Semaine d’avant')}</a>
+        ${Dates.sameDay(selected, now) ? '' : `<a class="button primary" href="#/agenda">${tr('Back to today', 'Revenir à aujourd’hui')}</a>`}
+        <a class="button" href="#/agenda/${Dates.key(Dates.addDays(selected, 7))}">${tr('Week after', 'Semaine d’après')} →</a>
       </div>
 
       <div class="week">${week.map(dayButton).join('')}</div>
 
       <section>
         <h2>${esc(Dates.relative(selected, now))}</h2>
-        ${list.length ? list.map((e) => eventCard(e, now)).join('') : empty('Nothing is planned this day.')}
+        ${list.length ? list.map((e) => eventCard(e, now)).join('') : empty(tr('Nothing is planned this day.', "Rien n'est prévu ce jour-là."))}
       </section>`;
   };
 
@@ -152,10 +151,10 @@ const Views = (() => {
 
   const peopleList = () => `
     <header class="page-head">
-      <h1>People</h1>
-      <p class="sub">Your family and friends</p>
+      <h1>${tr('People', 'Proches')}</h1>
+      <p class="sub">${tr('Your family and friends', 'Votre famille et vos amis')}</p>
     </header>
-    <p class="page-action"><a class="button" href="#/people/connections">See how everyone is connected →</a></p>
+    <p class="page-action"><a class="button" href="#/people/connections">${tr('See how everyone is connected', 'Voir comment chacun est lié')} →</a></p>
     <div class="people-grid">
       ${people.map((p) => `
         <a class="person-card" href="#/people/${esc(p.id)}">
@@ -175,7 +174,7 @@ const Views = (() => {
     const news = memos.filter((m) => m.personId === p.id).sort((a, b) => b.date - a.date);
 
     return `
-      <a class="back" href="#/people">← All people</a>
+      <a class="back" href="#/people">← ${tr('All people', 'Tous les proches')}</a>
 
       <header class="person-head">
         ${avatar(p, 'huge')}
@@ -187,38 +186,38 @@ const Views = (() => {
 
       ${p.origin || p.added || linksOf(p).length ? `
       <section>
-        <h2>How you know ${esc(p.name)}</h2>
+        <h2>${tr(`How you know ${esc(p.name)}`, `Comment vous connaissez ${esc(p.name)}`)}</h2>
         <div class="card">
           ${p.origin ? `<p>${esc(p.origin)}</p>` : ''}
           ${linksOf(p).map((l) => `<p class="link-line">${chip(l.other)} <span>${esc(l.text || l.label)}</span></p>`).join('')}
-          ${p.added ? `<p class="added-tag">Added by voice ${removeButton('people', p)}</p>` : ''}
+          ${p.added ? `<p class="added-tag">${tr('Added by voice', 'Ajouté à la voix')} ${removeButton('people', p)}</p>` : ''}
         </div>
       </section>` : ''}
 
       ${p.facts.length ? `
       <section>
-        <h2>Good to know</h2>
+        <h2>${tr('Good to know', 'Bon à savoir')}</h2>
         <ul class="card facts">${p.facts.map((f) => `<li>${esc(f)}</li>`).join('')}</ul>
       </section>` : ''}
 
       <section>
-        <h2>Latest news</h2>
+        <h2>${tr('Latest news', 'Dernières nouvelles')}</h2>
         ${news.length ? news.map((m) => `
           <article class="card memo">
             <p>${esc(m.text)}</p>
-            <p class="source">From your conversation ${esc(sourceLabel(m.date, now))}${m.quote ? `: “${esc(m.quote)}”` : ''}
+            <p class="source">${tr('From your conversation', 'De votre conversation')} ${esc(sourceLabel(m.date, now))}${m.quote ? `: “${esc(m.quote)}”` : ''}
               ${removeButton('memos', m)}</p>
-          </article>`).join('') : empty('No news written down yet.')}
+          </article>`).join('') : empty(tr('No news written down yet.', 'Aucune nouvelle notée pour l’instant.'))}
       </section>
 
       <section>
-        <h2>Next time together</h2>
-        ${nextTime ? eventCard(nextTime, now, { showDay: true, highlight: true }) : empty('Nothing is planned yet.')}
+        <h2>${tr('Next time together', 'La prochaine fois ensemble')}</h2>
+        ${nextTime ? eventCard(nextTime, now, { showDay: true, highlight: true }) : empty(tr('Nothing is planned yet.', "Rien n'est encore prévu."))}
       </section>
 
       ${lastTime ? `
       <section>
-        <h2>Last time together</h2>
+        <h2>${tr('Last time together', 'La dernière fois ensemble')}</h2>
         ${eventCard(lastTime, now, { showDay: true })}
       </section>` : ''}`;
   };
@@ -231,7 +230,8 @@ const Views = (() => {
 
   const sourceLabel = (date, now) => {
     const label = Dates.relative(date, now);
-    return label === 'Today' || label === 'Yesterday' ? label.toLowerCase() : `on ${label}`;
+    const days = Dates.daysBetween(date, now);
+    return days === 0 || days === 1 ? label.toLowerCase() : tr(`on ${label}`, `du ${label.toLowerCase()}`);
   };
 
   // ---- Diary ----
@@ -250,40 +250,41 @@ const Views = (() => {
     const planned = eventsOn(selected);
 
     const prev = selected > Dates.startOfDay(oldest)
-      ? `<a class="button" href="#/diary/${Dates.key(Dates.addDays(selected, -1))}">← Day before</a>`
-      : '<span class="button disabled">← Day before</span>';
+      ? `<a class="button" href="#/diary/${Dates.key(Dates.addDays(selected, -1))}">← ${tr('Day before', 'Jour d’avant')}</a>`
+      : `<span class="button disabled">← ${tr('Day before', 'Jour d’avant')}</span>`;
     const next = !isToday
-      ? `<a class="button" href="#/diary/${Dates.key(Dates.addDays(selected, 1))}">Day after →</a>`
-      : '<span class="button disabled">Day after →</span>';
+      ? `<a class="button" href="#/diary/${Dates.key(Dates.addDays(selected, 1))}">${tr('Day after', 'Jour d’après')} →</a>`
+      : `<span class="button disabled">${tr('Day after', 'Jour d’après')} →</span>`;
 
     return `
       <header class="page-head">
-        <h1>Diary</h1>
+        <h1>${tr('Diary', 'Journal')}</h1>
         <p class="sub">${esc(Dates.long(selected))}</p>
       </header>
 
       <div class="week-nav">${prev}${next}</div>
 
       <section>
-        <h2>${isToday ? 'Today' : 'What happened'}</h2>
+        <h2>${isToday ? tr('Today', "Aujourd'hui") : tr('What happened', "Ce qui s'est passé")}</h2>
         ${entries.length
           ? entries.map((d) => `
             <article class="card diary-text">
               <p>${esc(d.text)}</p>
-              ${d.added ? `<p class="added-tag">Written from a conversation ${removeButton('diary', d)}</p>` : ''}
+              ${d.added ? `<p class="added-tag">${tr('Written from a conversation', 'Écrit à partir d’une conversation')} ${removeButton('diary', d)}</p>` : ''}
             </article>`).join('')
-          : empty(isToday ? 'Today\'s page is not written yet. It will be ready this evening.' : 'Nothing was written this day.')}
+          : empty(isToday ? tr('Today\'s page is not written yet. It will be ready this evening.', "La page d'aujourd'hui n'est pas encore écrite. Elle sera prête ce soir.")
+            : tr('Nothing was written this day.', "Rien n'a été écrit ce jour-là."))}
       </section>
 
       ${seen.length ? `
       <section>
-        <h2>People you saw or spoke to</h2>
+        <h2>${tr('People you saw or spoke to', 'Les personnes vues ou entendues')}</h2>
         ${chips(seen)}
       </section>` : ''}
 
       ${noted.length ? `
       <section>
-        <h2>Also noted</h2>
+        <h2>${tr('Also noted', 'Également noté')}</h2>
         ${noted.map((n) => `
           <article class="card memo">
             <p><strong>${esc(n.subject)}:</strong> ${esc(n.text)}</p>
@@ -293,7 +294,7 @@ const Views = (() => {
 
       ${planned.length ? `
       <section>
-        <h2>${isToday ? 'Planned today' : 'What was planned'}</h2>
+        <h2>${isToday ? tr('Planned today', "Prévu aujourd'hui") : tr('What was planned', 'Ce qui était prévu')}</h2>
         ${planned.map((e) => eventCard(e, now)).join('')}
       </section>` : ''}`;
   };

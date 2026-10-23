@@ -20,13 +20,13 @@ const Listen = (() => {
 
   const view = () => `
     <header class="page-head">
-      <h1>Listen</h1>
-      <p class="sub">Leave the microphone on during a conversation: what is said is written down here.</p>
+      <h1>${tr('Listen', 'Écouter')}</h1>
+      <p class="sub">${tr('Leave the microphone on during a conversation: what is said is written down here.', 'Laissez le micro allumé pendant une conversation : ce qui est dit s’écrit ici.')}</p>
     </header>
 
     <div class="listen-controls">
       <button id="mic-button" class="button mic" type="button"></button>
-      <button id="clear-button" class="button" type="button">Clear the text</button>
+      <button id="clear-button" class="button" type="button">${tr('Clear the text', 'Effacer le texte')}</button>
     </div>
 
     <div class="level" aria-hidden="true"><div id="level-bar"></div></div>
@@ -36,12 +36,12 @@ const Listen = (() => {
     ${Commands.view()}
 
     <section>
-      <h2>What was said</h2>
+      <h2>${tr('What was said', 'Ce qui a été dit')}</h2>
       <div id="transcript" class="card transcript" aria-live="polite"></div>
       <form id="type-form" class="type-form">
-        <label for="type-box">Or type a conversation, to test without speaking</label>
+        <label for="type-box">${tr('Or type a conversation, to test without speaking', 'Ou tapez une conversation, pour essayer sans parler')}</label>
         <textarea id="type-box" rows="3"></textarea>
-        <button class="button" type="submit">Add to the text</button>
+        <button class="button" type="submit">${tr('Add to the text', 'Ajouter au texte')}</button>
       </form>
     </section>
 
@@ -55,7 +55,7 @@ const Listen = (() => {
 
     const on = listening();
     const stats = Mic.stats;
-    button.innerHTML = on ? 'Switch off the microphone' : `${Icons.icon('mic')} Switch on the microphone`;
+    button.innerHTML = on ? tr('Switch off the microphone', 'Éteindre le micro') : `${Icons.icon('mic')} ${tr('Switch on the microphone', 'Allumer le micro')}`;
     button.classList.toggle('on', on);
     button.disabled = !Mic.usable();
     if (statusIsHtml) $('listen-status').innerHTML = status;
@@ -71,7 +71,7 @@ const Listen = (() => {
       <p><span class="line-time">${esc(Dates.time(l.time))}</span>${esc(l.text)}</p>`).join('');
     const live = liveText ? `<p class="live"><span class="line-time">…</span>${esc(liveText)}</p>` : '';
     $('transcript').innerHTML = done + live
-      || '<p class="placeholder">Nothing yet. Switch on the microphone and speak.</p>';
+      || `<p class="placeholder">${tr('Nothing yet. Switch on the microphone and speak.', 'Rien pour l’instant. Allumez le micro et parlez.')}</p>`;
   };
 
   const setStatus = (text, error = false, html = false) => {
@@ -98,26 +98,30 @@ const Listen = (() => {
   const checkServer = async () => {
     if (location.protocol === 'file:') {
       // Opened by double-clicking index.html: the microphone only works through the server.
-      setStatus('The microphone does not work when the page is opened as a file. '
-        + `Double-click start.bat in the project folder, then use <a href="${Mic.APP_URL}/#/listen">${Mic.APP_URL}</a>.`, true, true);
+      setStatus(tr('The microphone does not work when the page is opened as a file. ', 'Le micro ne marche pas quand la page est ouverte comme un fichier. ')
+        + tr('Double-click start.bat in the project folder, then use', 'Double-cliquez sur start.bat dans le dossier du projet, puis utilisez')
+        + ` <a href="${Mic.APP_URL}/#/listen">${Mic.APP_URL}</a>.`, true, true);
       return;
     }
     try {
       const health = await (await fetch('/api/health')).json();
-      if (health.error) setStatus(`The speech model could not be loaded: ${health.error}`, true);
+      if (health.error) setStatus(tr(`The speech model could not be loaded: ${health.error}`, `Le modèle de la voix n’a pas pu être chargé : ${health.error}`), true);
       else if (!health.ready) {
-        setStatus('The speech model is loading. The first start downloads it and can take a minute.');
+        setStatus(tr('The speech model is loading. The first start downloads it and can take a minute.', 'Le modèle de la voix se charge. Le premier démarrage le télécharge et peut prendre une minute.'));
         setTimeout(() => { if ($('mic-button') && !listening()) checkServer(); }, 2000);
-      } else setStatus(`Ready. Model: ${health.model}, running on ${health.device === 'cuda' ? 'the graphics card' : 'the processor'}.`);
+      } else {
+        const where = health.device === 'cuda' ? tr('the graphics card', 'la carte graphique') : tr('the processor', 'le processeur');
+        setStatus(tr(`Ready. Model: ${health.model}, running on ${where}.`, `Prêt. Modèle : ${health.model}, sur ${where}.`));
+      }
     } catch {
-      setStatus('The Near server is not answering. Double-click start.bat in the project folder.', true);
+      setStatus(tr('The Near server is not answering. Double-click start.bat in the project folder.', 'Le serveur de Near ne répond pas. Double-cliquez sur start.bat dans le dossier du projet.'), true);
     }
   };
 
   // A phrase that was said (or typed) is written down, then checked for an agenda command.
   const addLine = (time, text) => {
     lines.push({ time, text });
-    Commands.heard(text).catch((err) => setStatus(`Could not look for a command: ${err.message}`, true));
+    Commands.heard(text).catch((err) => setStatus(tr(`Could not look for a command: ${err.message}`, `Impossible de chercher une demande : ${err.message}`), true));
   };
 
   // ---- Microphone ----
@@ -128,7 +132,7 @@ const Listen = (() => {
       onPhrase: (text, time) => {
         liveText = '';
         if (text) addLine(time, text);
-        if (isError && listening()) setStatus('Listening…'); else paint();
+        if (isError && listening()) setStatus(tr('Listening…', 'J’écoute…')); else paint();
       },
       onPartial: (text) => { liveText = text; paint(); },
       onLevel: (level) => {
@@ -137,9 +141,9 @@ const Listen = (() => {
       },
       onTick: paint, // refreshes the details line
       onError: (message) => setStatus(message, true),
-      onStop: () => setStatus('The microphone is off.'),
+      onStop: () => setStatus(tr('The microphone is off.', 'Le micro est éteint.')),
     });
-    if (on) setStatus('Listening…');
+    if (on) setStatus(tr('Listening…', 'J’écoute…'));
   };
 
   const stop = () => {

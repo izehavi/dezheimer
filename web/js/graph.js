@@ -5,9 +5,9 @@ const Graph = (() => {
   const SIZE = 800, CENTER = SIZE / 2, RADIUS = 280, NODE = 46;
 
   const GROUPS = [
-    { id: 'family', label: 'Family', color: '#5B6249' },
-    { id: 'friends', label: 'Friends', color: '#6C5E7E' },
-    { id: 'care', label: 'Care and help', color: '#4E6B73' },
+    { id: 'family', label: tr('Family', 'Famille'), color: '#5B6249' },
+    { id: 'friends', label: tr('Friends', 'Amis'), color: '#6C5E7E' },
+    { id: 'care', label: tr('Care and help', 'Soins et aide'), color: '#4E6B73' },
   ];
   const FAMILY = /\b(daughter|son|grand\w+|wife|husband|sister|brother|mother|father|mum|dad|niece|nephew|cousin|aunt|uncle|in-law|child|partner|fianc\w+|boyfriend|girlfriend)\b/i;
   const CARE = /\b(doctor|nurse|helper|carer|caregiver|physio\w*|dentist|pharmacist|therapist|optician|aide)\b/i;
@@ -110,10 +110,10 @@ const Graph = (() => {
     }).join('');
 
     return `
-      <svg class="graph" viewBox="-190 -40 ${SIZE + 380} ${SIZE + 90}" role="group" aria-label="Map of the people you know">
+      <svg class="graph" viewBox="-190 -40 ${SIZE + 380} ${SIZE + 90}" role="group" aria-label="${tr('Map of the people you know', 'Carte des personnes que vous connaissez')}">
         ${spokes}${chords}
         <circle cx="${CENTER}" cy="${CENTER}" r="60" class="graph-you" />
-        <text class="graph-initial" x="${CENTER}" y="${CENTER}">You</text>
+        <text class="graph-initial" x="${CENTER}" y="${CENTER}">${tr('You', 'Vous')}</text>
         ${nodes}
       </svg>`;
   };
@@ -122,17 +122,17 @@ const Graph = (() => {
     const found = matches();
     const p = selected && personById(selected);
     if (!p) {
-      if (found && !found.size) return `<p class="empty">Nobody matches “${esc(query)}”.</p>`;
+      if (found && !found.size) return `<p class="empty">${tr(`Nobody matches “${esc(query)}”.`, `Personne ne correspond à « ${esc(query)} ».`)}</p>`;
       if (found) {
         return `
           <article class="card graph-panel">
-            <p>${found.size} people match “${esc(query)}”. Touch one:</p>
+            <p>${tr(`${found.size} people match “${esc(query)}”. Touch one:`, `${found.size} personnes correspondent à « ${esc(query)} ». Touchez-en une :`)}</p>
             <ul class="panel-links">${people.filter((x) => found.has(x.id)).map((x) => `
               <li><button class="chip" type="button" data-person="${esc(x.id)}">${esc(x.name)}</button>
                 <span>${esc(x.relationship)}</span></li>`).join('')}</ul>
           </article>`;
       }
-      return '<p class="empty">Touch a person to see how you know them and who they are linked to.</p>';
+      return `<p class="empty">${tr('Touch a person to see how you know them and who they are linked to.', 'Touchez une personne pour voir comment vous la connaissez et à qui elle est liée.')}</p>`;
     }
     const links = linksOf(p.id);
     const news = memos.filter((m) => m.personId === p.id).sort((a, b) => b.date - a.date)[0];
@@ -144,30 +144,30 @@ const Graph = (() => {
         ${links.length ? `<ul class="panel-links">${links.map((l) => `
           <li><button class="chip" type="button" data-person="${esc(l.other.id)}">${esc(l.other.name)}</button>
             <span>${esc(l.text || l.label)}</span></li>`).join('')}</ul>` : ''}
-        ${news ? `<p class="panel-news"><strong>Latest news:</strong> ${esc(news.text)}</p>` : ''}
+        ${news ? `<p class="panel-news"><strong>${tr('Latest news:', 'Dernières nouvelles :')}</strong> ${esc(news.text)}</p>` : ''}
         <p class="panel-actions">
-          <a class="button primary" href="#/people/${esc(p.id)}">Open ${esc(p.name)}'s page</a>
-          <button class="button" type="button" data-person="">Show everyone</button>
+          <a class="button primary" href="#/people/${esc(p.id)}">${tr(`Open ${esc(p.name)}'s page`, `Ouvrir la page de ${esc(p.name)}`)}</a>
+          <button class="button" type="button" data-person="">${tr('Show everyone', 'Montrer tout le monde')}</button>
         </p>
       </article>`;
   };
 
   const view = () => `
-    <a class="back" href="#/people">← All people</a>
+    <a class="back" href="#/people">← ${tr('All people', 'Tous les proches')}</a>
 
     <header class="page-head with-back">
-      <h1>How everyone is connected</h1>
-      <p class="sub">You are in the middle. Touch a person to see how you know them.</p>
+      <h1>${tr('How everyone is connected', 'Comment chacun est lié')}</h1>
+      <p class="sub">${tr('You are in the middle. Touch a person to see how you know them.', 'Vous êtes au milieu. Touchez une personne pour voir comment vous la connaissez.')}</p>
     </header>
 
     <div class="graph-tools">
-      <label for="graph-search">Search for a person, a place or a word</label>
-      <input id="graph-search" type="search" autocomplete="off" placeholder="For example: school, neighbour, Sarah" value="${esc(query)}">
+      <label for="graph-search">${tr('Search for a person, a place or a word', 'Chercher une personne, un lieu ou un mot')}</label>
+      <input id="graph-search" type="search" autocomplete="off" placeholder="${tr('For example: school, neighbour, Sarah', 'Par exemple : école, voisine, Sarah')}" value="${esc(query)}">
     </div>
 
     <ul class="graph-legend">
       ${GROUPS.map((g) => `<li><span style="background:${g.color}"></span>${g.label}</li>`).join('')}
-      <li><span class="dashed"></span>They know each other</li>
+      <li><span class="dashed"></span>${tr('They know each other', 'Ils se connaissent')}</li>
     </ul>
 
     <div id="graph-map"></div>

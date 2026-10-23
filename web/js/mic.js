@@ -82,8 +82,8 @@ const Mic = (() => {
 
     if (!usable()) {
       h.onError?.(location.protocol === 'http:' && !/^(localhost|127\.)/.test(location.hostname)
-        ? 'The microphone only works on the secure address, the one that starts with https.'
-        : `The microphone needs the Near server. Double-click start.bat, then open ${APP_URL}`);
+        ? tr('The microphone only works on the secure address, the one that starts with https.', 'Le micro ne marche que sur l’adresse sécurisée, celle qui commence par https.')
+        : tr(`The microphone needs the Near server. Double-click start.bat, then open ${APP_URL}`, `Le micro a besoin du serveur de Near. Double-cliquez sur start.bat, puis ouvrez ${APP_URL}`));
       return false;
     }
     try {
@@ -104,11 +104,12 @@ const Mic = (() => {
     } catch (err) {
       release();
       const reasons = {
-        NotAllowedError: 'The browser is not allowed to use the microphone. Click the padlock or microphone icon in the address bar, allow the microphone, and try again. Also check Windows Settings > Privacy & security > Microphone.',
-        NotFoundError: 'No microphone was found on this computer.',
-        NotReadableError: 'The microphone is being used by another program, or Windows is blocking it.',
+        NotAllowedError: tr('The browser is not allowed to use the microphone. Click the padlock or microphone icon in the address bar, allow the microphone, and try again. Also check Windows Settings > Privacy & security > Microphone.',
+          'Le navigateur n’a pas le droit d’utiliser le micro. Touchez le cadenas ou l’icône du micro dans la barre d’adresse, autorisez le micro, et réessayez.'),
+        NotFoundError: tr('No microphone was found on this computer.', 'Aucun micro n’a été trouvé sur cet appareil.'),
+        NotReadableError: tr('The microphone is being used by another program, or Windows is blocking it.', 'Le micro est utilisé par un autre programme, ou bloqué.'),
       };
-      h.onError?.(reasons[err.name] || `The microphone could not be started: ${err.name}: ${err.message}`);
+      h.onError?.(reasons[err.name] || tr(`The microphone could not be started: ${err.name}: ${err.message}`, `Le micro n’a pas pu démarrer : ${err.name} : ${err.message}`));
       return false;
     }
     if (handlers !== h) { release(); return false; } // stopped while starting
@@ -223,6 +224,7 @@ const Mic = (() => {
             'X-Sample-Rate': String(rate),
             'X-Sample-Format': 'int16',
             'X-Vocabulary': encodeURIComponent(vocabulary()),
+            'X-Language': I18n.lang,
             ...(keep ? { 'X-Keep': '1' } : {}),
           },
           body: sound.buffer,
@@ -239,8 +241,9 @@ const Mic = (() => {
       })
       .catch((err) => h.onError?.(
         err instanceof TypeError
-          ? 'The Near server stopped answering. Check that its black window is still open on the computer, and that this device can reach it.'
-          : `Could not write down the last phrase: ${err.message}`))
+          ? tr('The Near server stopped answering. Check that its black window is still open on the computer, and that this device can reach it.',
+            'Le serveur de Near ne répond plus. Vérifiez que sa fenêtre noire est toujours ouverte sur l’ordinateur, et que cet appareil peut l’atteindre.')
+          : tr(`Could not write down the last phrase: ${err.message}`, `Impossible d’écrire la dernière phrase : ${err.message}`)))
       .finally(() => { pending -= 1; });
   };
 

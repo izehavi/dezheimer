@@ -36,15 +36,26 @@ def label_with(model: str) -> None:
     if not to_cut and not to_write:
         return
     print(f"Using {model}. The first time, the model is downloaded.")
-    transcriber = Transcriber(model)
+    loaded = Transcriber(model)
+    loaded._load()
+    by_language = {}
+
+    def heard_in(lang):
+        # The same large model, loaded once, told which language to hear: English or French.
+        if lang not in by_language:
+            by_language[lang] = Transcriber(model, lang)
+            by_language[lang]._processor, by_language[lang]._model = loaded._processor, loaded._model
+            by_language[lang].device, by_language[lang].ready = loaded.device, True
+        return by_language[lang]
+
     for r in to_cut:
-        made = readings.cut(r, transcriber, model)
+        made = readings.cut(r, heard_in(r.get("lang", "en")), model)
         print(f"  {r['title']}: {made['kept']} phrases kept out of {made['pieces']} pieces.")
     if to_write:
         print(f"  Writing down {len(to_write)} phrases said to the assistant.")
     for r in to_write:
         audio, rate = recordings.read(r["path"])
-        recordings.update(r["name"], auto=transcriber.transcribe(audio, rate, r["vocabulary"]), auto_model=model)
+        recordings.update(r["name"], auto=heard_in(r.get("lang", "en")).transcribe(audio, rate, r["vocabulary"]), auto_model=model)
 
 
 def in_test(name: str) -> bool:

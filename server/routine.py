@@ -23,8 +23,13 @@ TELL_MIN = {"pills": 45, "meal": 120, "drink": 120}   # minutes before the relat
 LATE_MIN = 10        # a reminder more than this late (the server was off) is not sent any more
 TELL_LATE_MIN = 60
 OPEN_SECONDS = 90    # the app was seen this recently: it is open and speaks by itself
-WEEKDAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
-PARTS = ((11, "morning"), (15, "midday"), (20, "evening"), (24, "night"))   # the boxes of a pill box
+WEEKDAYS = {
+    "en": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+    "fr": ["lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche"],
+}
+# The boxes of a pill box: the same parts of the day as the app (day.js).
+PARTS = {"en": ("morning", "midday", "evening", "night"), "fr": ("matin", "midi", "soir", "nuit")}
+_PART_ENDS = (11, 15, 20, 24)
 
 
 def local_now(zone, offset_min, now=None):
@@ -68,16 +73,20 @@ def due(tasks, done_ids, sent, now):
     return found
 
 
-def box(task, date):
-    """The box of a pill box for this thing: "Wednesday morning"."""
+def box(task, date, lang="en"):
+    """The box of a pill box for this thing: "Wednesday morning", "mercredi matin"."""
+    lang = lang if lang in PARTS else "en"
     hour = int(task["time"].split(":")[0]) if task.get("time") else 8
-    return f"{WEEKDAYS[date.weekday()]} {next(part for end, part in PARTS if hour < end)}"
+    part = PARTS[lang][next(i for i, end in enumerate(_PART_ENDS) if hour < end)]
+    return f"{WEEKDAYS[lang][date.weekday()]} {part}"
 
 
-def message(task, what, name, date):
-    """The notification for the person ("time", "again") or for the relatives."""
+def message(task, what, name, date, lang="en"):
+    """The notification for the person ("time", "again") or for the relatives, in `lang`."""
     text = task["text"]
     pills = task.get("kind") == "pills"
+    if lang == "fr":
+        return _message_fr(task, what, name, date)
     if what == "relatives":
         hint = {
             "pills": f" Ask {name} to look at the pill box, at {box(task, date)}: if it is empty, the pills were taken.",
@@ -87,6 +96,21 @@ def message(task, what, name, date):
         return {"title": f"{name} has not noted: {text}", "body": f"It was planned at {task['time']}.{hint}", "url": "/#/"}
     body = f"{text}.{f' Take them from the box: {box(task, date)}.' if pills else ''} Touch here when it is done."
     title = f"{name}, it is time" if what == "time" else f"{name}, a small reminder"
+    return {"title": title, "body": body, "url": f"/#/day/now/{task['id']}"}
+
+
+def _message_fr(task, what, name, date):
+    text = task["text"]
+    if what == "relatives":
+        hint = {
+            "pills": f" Demandez à {name} de regarder le pilulier, à la case du {box(task, date, 'fr')} : si elle est vide, les médicaments ont été pris.",
+            "meal": f" Vous pouvez appeler {name} et lui proposer de manger quelque chose.",
+            "drink": f" Vous pouvez appeler {name} et lui proposer un verre d'eau.",
+        }.get(task.get("kind"), "")
+        return {"title": f"{name} n'a pas noté : {text}", "body": f"C'était prévu à {task['time']}.{hint}", "url": "/#/"}
+    pills = f" Prenez-les dans la case : {box(task, date, 'fr')}." if task.get("kind") == "pills" else ""
+    body = f"{text}.{pills} Touchez ici quand c'est fait."
+    title = f"{name}, c'est l'heure" if what == "time" else f"{name}, un petit rappel"
     return {"title": title, "body": body, "url": f"/#/day/now/{task['id']}"}
 
 
@@ -108,9 +132,10 @@ def run(now=None, send=None):
                 continue
             else:
                 phones = accounts.subscriptions(person["id"])
-            note = message(task, what, accounts.person_name(person["id"]) or person["name"], today.date())
+            name = accounts.person_name(person["id"]) or person["name"]
             for subscription in phones:
-                status = send(subscription, note)
+                # Each phone in its own language: the person's, or the relative's.
+                status = send(subscription, message(task, what, name, today.date(), subscription.get("lang", "en")))
                 if status in (404, 410):
                     accounts.unsubscribe(subscription["endpoint"])
                 elif not 200 <= status < 300:

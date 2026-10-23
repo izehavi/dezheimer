@@ -94,9 +94,13 @@ class Alerts(InTempFolder):
         accounts.subscribe(self.sarah, "https://push.example/1", "key", "auth")
         accounts.subscribe(self.sarah, "https://push.example/1", "key2", "auth2")
         self.assertEqual(accounts.subscriptions(self.sarah),
-                         [{"endpoint": "https://push.example/1", "p256dh": "key2", "auth": "auth2"}])
+                         [{"endpoint": "https://push.example/1", "p256dh": "key2", "auth": "auth2", "lang": "en"}])
         accounts.unsubscribe("https://push.example/1")
         self.assertEqual(accounts.subscriptions(self.sarah), [])
+
+    def test_a_phone_in_french(self):
+        accounts.subscribe(self.sarah, "https://push.example/2", "k", "a", "fr")
+        self.assertEqual(accounts.subscriptions(self.sarah)[0]["lang"], "fr")
 
     def test_the_name_given_to_relatives(self):
         self.assertEqual(accounts.person_name(self.helen), "Helen")

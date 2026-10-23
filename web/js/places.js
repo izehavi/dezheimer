@@ -19,10 +19,11 @@ const Places = (() => {
   let declined = false;          // the user did not want to say where they are, until the page is closed
 
   // Places that are not on a map: "At home", "At Sarah's home", "On the phone".
-  const PRIVATE = /\b(home|house|nowhere|phone|tablet|online|video|pick you up)\b/i;
+  // In French: "À la maison", "Chez Sarah", "Au téléphone".
+  const PRIVATE = /\b(home|house|nowhere|phone|tablet|online|video|pick you up|maison|chez|nulle part|t[ée]l[ée]phone|tablette|en ligne|vid[ée]o|passe vous chercher)\b/i;
   const searchable = (place) => !!place && !PRIVATE.test(place) && !declined;
 
-  const query = (place) => place.replace(/^(at|in|to|on)\s+/i, '').replace(/^the\s+/i, '').replace(/[.?!]+$/, '').trim();
+  const query = (place) => place.replace(/^(at|in|to|on|à la|à l['’]|au|aux|à|dans)\s*/i, '').replace(/^(the|le|la|les|l['’])\s*/i, '').replace(/[.?!]+$/, '').trim();
 
   // ---- Where the user is ----
 
@@ -51,7 +52,7 @@ const Places = (() => {
 
   // "I am in Lyon." -> the town of Lyon, remembered. Null when no such town is found.
   const setTown = async (text) => {
-    const name = text.replace(/^\W*(i am|i'm|i live|we are|it is|it's)?\s*(in|at|near)?\s+/i, ' ').replace(/[.?!,]+\s*$/, '').trim();
+    const name = text.replace(/^\W*(i am|i'm|i live|we are|it is|it's|je suis|j'habite|on est|nous sommes|c'est)?\s*(in|at|near|à|au|en|près de)?\s+/i, ' ').replace(/[.?!,]+\s*$/, '').trim();
     if (!name) return null;
     const first = async (extra) => (await fetchPlaces(`q=${encodeURIComponent(name)}&limit=1${extra}`))[0];
     const f = (await first('&layer=city')) || (await first(''));
@@ -117,10 +118,10 @@ const Places = (() => {
     return found.slice(0, MAX_FOUND).map(({ match, km: d, ...spot }) => ({ ...spot, sure: match > 0, ...(near.exact ? { km: d } : {}) }));
   };
 
-  // "600 metres", "2.5 kilometres"
+  // "600 metres", "2.5 kilometres"; in French "600 mètres", "2,5 kilomètres".
   const far = (d) => (d === undefined ? '' : d < 0.95
-    ? `${Math.max(50, Math.round(d * 20) * 50)} metres`
-    : `${d < 10 ? Math.round(d * 10) / 10 : Math.round(d)} kilometres`);
+    ? `${Math.max(50, Math.round(d * 20) * 50)} ${tr('metres', 'mètres')}`
+    : `${(d < 10 ? Math.round(d * 10) / 10 : Math.round(d)).toLocaleString(I18n.locale)} ${tr('kilometres', 'kilomètres')}`);
 
   const mapLink = ({ lat, lon }) => `https://www.openstreetmap.org/?mlat=${lat}&mlon=${lon}#map=18/${lat}/${lon}`;
 

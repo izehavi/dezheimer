@@ -23,10 +23,12 @@ from .accounts import DATA_DIR
 RECORDINGS_DIR = Path(DATA_DIR) / "recordings"
 
 
-def keep(audio: np.ndarray, sample_rate: int, heard: str, vocabulary: str, model: str, said: str | None = None) -> str:
+def keep(audio: np.ndarray, sample_rate: int, heard: str, vocabulary: str, model: str, said: str | None = None,
+         lang: str = "en") -> str:
     """Save one phrase, and return its name.
 
     `said` is given when the phrase is a piece of a text read aloud: its exact words are known.
+    `lang` is the language it was said in: "en" or "fr".
     """
     RECORDINGS_DIR.mkdir(parents=True, exist_ok=True)
     while True:
@@ -39,7 +41,7 @@ def keep(audio: np.ndarray, sample_rate: int, heard: str, vocabulary: str, model
         file.setframerate(sample_rate)
         file.writeframes((np.clip(audio, -1, 1) * 32767).astype("<i2").tobytes())
     write_note(name, {
-        "heard": heard, "said": said, "vocabulary": vocabulary, "model": model,
+        "heard": heard, "said": said, "vocabulary": vocabulary, "model": model, "lang": lang,
         # Where the words in "said" come from: read aloud, or (later) written by the tester.
         "source": "read" if said else "assistant",
     })

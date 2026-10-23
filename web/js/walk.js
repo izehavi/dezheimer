@@ -84,23 +84,29 @@ const Walk = (() => {
 
   // ---- The way ----
 
-  const TURN = {
+  const TURN = tr({
     left: 'left', right: 'right', 'slight left': 'slightly left', 'slight right': 'slightly right',
     'sharp left': 'sharp left', 'sharp right': 'sharp right',
-  };
-  const ORDINAL = ['', 'first', 'second', 'third', 'fourth', 'fifth', 'sixth'];
+  }, {
+    left: 'à gauche', right: 'à droite', 'slight left': 'légèrement à gauche', 'slight right': 'légèrement à droite',
+    'sharp left': 'franchement à gauche', 'sharp right': 'franchement à droite',
+  });
+  const ORDINAL = tr(['', 'first', 'second', 'third', 'fourth', 'fifth', 'sixth'],
+    ['', 'première', 'deuxième', 'troisième', 'quatrième', 'cinquième', 'sixième']);
 
   // A step of the routing service, as a short sentence.
   const instruction = (s) => {
     const { type, modifier, exit } = s.maneuver;
-    const onto = s.name ? ` onto ${s.name}` : '';
-    if (type === 'depart') return s.name ? `Walk along ${s.name}.` : 'Start walking along the line.';
-    if (type === 'arrive') return 'You will be there.';
-    if (type === 'roundabout' || type === 'rotary') return `At the roundabout, take the ${ORDINAL[exit] || 'next'} exit${onto}.`;
-    if (modifier === 'uturn') return 'Turn around.';
-    if (modifier === 'straight' || !TURN[modifier]) return `Go straight on${onto}.`;
-    if (type === 'end of road') return `At the end of the road, turn ${TURN[modifier]}${onto}.`;
-    return `Turn ${TURN[modifier]}${onto}.`;
+    const onto = s.name ? tr(` onto ${s.name}`, ` dans ${s.name}`) : '';
+    if (type === 'depart') return s.name ? tr(`Walk along ${s.name}.`, `Suivez ${s.name}.`) : tr('Start walking along the line.', 'Commencez à marcher en suivant la ligne.');
+    if (type === 'arrive') return tr('You will be there.', 'Vous y serez.');
+    if (type === 'roundabout' || type === 'rotary') {
+      return tr(`At the roundabout, take the ${ORDINAL[exit] || 'next'} exit${onto}.`, `Au rond-point, prenez la ${ORDINAL[exit] || 'prochaine'} sortie${onto}.`);
+    }
+    if (modifier === 'uturn') return tr('Turn around.', 'Faites demi-tour.');
+    if (modifier === 'straight' || !TURN[modifier]) return tr(`Go straight on${onto}.`, `Continuez tout droit${onto}.`);
+    if (type === 'end of road') return tr(`At the end of the road, turn ${TURN[modifier]}${onto}.`, `Au bout de la rue, tournez ${TURN[modifier]}${onto}.`);
+    return tr(`Turn ${TURN[modifier]}${onto}.`, `Tournez ${TURN[modifier]}${onto}.`);
   };
 
   // A street that only changes its name is not worth a word.
@@ -135,6 +141,8 @@ const Walk = (() => {
   };
 
   const minutes = (seconds) => Math.max(1, Math.round(seconds / 60));
+  const onFoot = () => tr(`${far(walk.route.metres)}, about ${minutes(walk.route.seconds)} minutes on foot.`,
+    `${far(walk.route.metres)}, environ ${minutes(walk.route.seconds)} minutes à pied.`);
   const far = (m) => Places.far(m / 1000);
   const googleMaps = (to) => `https://www.google.com/maps/dir/?api=1&destination=${to[0]},${to[1]}&travelmode=walking`;
 
@@ -201,7 +209,7 @@ const Walk = (() => {
     const next = walk.route.steps.find((s) => s.idx > i);
     if (!next) return;
     const d = metres(here.at, next.at);
-    message = `${d > TURN_SOON_M ? `In ${far(d)}: ` : ''}${next.text}`;
+    message = `${d > TURN_SOON_M ? tr(`In ${far(d)}: `, `Dans ${far(d)} : `) : ''}${next.text}`;
     paintMessage();
     if (d <= TURN_SOON_M && !next.said) {
       next.said = true;
@@ -212,8 +220,9 @@ const Walk = (() => {
 
   // `at` writes the time: Dates.time on the screen, Speech.time for the voice.
   const goingTo = (at) => {
-    const place = walk.place ? `, ${walk.place.replace(/^At\s+/i, 'at ')}` : '';
-    return `You are going to: ${walk.title}${place}. It starts at ${at(new Date(walk.start))}.`;
+    const place = walk.place ? `, ${walk.place.replace(/^At\s+/i, 'at ').replace(/^(À|Au|Aux|Chez)\b/, (w) => w.toLowerCase())}` : '';
+    return tr(`You are going to: ${walk.title}${place}. It starts at ${at(new Date(walk.start))}.`,
+      `Vous allez à : ${walk.title}${place}. Ça commence à ${at(new Date(walk.start))}.`);
   };
 
   // Off the way for too long, or "I am lost": where the user is going, where they
@@ -224,7 +233,7 @@ const Walk = (() => {
     offSince = null;
     walk.lost.push(Date.now());
     save();
-    help = 'One moment, I am looking for the way…';
+    help = tr('One moment, I am looking for the way…', 'Un instant, je cherche le chemin…');
     paintHelp();
     // Someone who is lost should not wait: the position of the walk, if it is recent.
     const fresh = here && Date.now() - here.time < FRESH_MS && here.accuracy <= POOR_FIX_M;
@@ -239,13 +248,14 @@ const Walk = (() => {
         streetAt(here.at).catch(() => null),
         fetchRoute(here.at, walk.to).catch(() => null),
       ]);
-      if (street) text += ` You are on ${street}.`;
+      if (street) text += tr(` You are on ${street}.`, ` Vous êtes dans ${street}.`);
       if (route) {
         walk.route = route;
-        text += ` It is ${far(route.metres)} from here. Follow the line on the map. ${route.steps[0] ? route.steps[0].text : ''}`;
+        text += tr(` It is ${far(route.metres)} from here. Follow the line on the map.`, ` C'est à ${far(route.metres)} d'ici. Suivez la ligne sur la carte.`)
+          + ` ${route.steps[0] ? route.steps[0].text : ''}`;
         if (route.steps[0]) route.steps[0].said = true;
       } else {
-        text += ' Follow the line on the map.';
+        text += tr(' Follow the line on the map.', ' Suivez la ligne sur la carte.');
       }
     }
     // From the second time, the relatives are told each time, with where the user is now.
@@ -253,25 +263,25 @@ const Walk = (() => {
       const told = await tellRelatives({ ...walk, here, street }).catch(() => null);
       if (told && told.length) {
         walk.told = true;
-        text += ` I have told ${told.join(' and ')} where you are.`;
+        text += tr(` I have told ${told.join(' and ')} where you are.`, ` J'ai prévenu ${told.join(' et ')} de l'endroit où vous êtes.`);
       }
     }
     save();
-    help = `${name}, do not worry. ${goingTo(Dates.time)}${text}`;
+    help = `${name}, ${tr('do not worry.', 'ne vous inquiétez pas.')} ${goingTo(Dates.time)}${text}`;
     helping = false;
     drawWay();
     paintHelp();
-    await Speech.say(`${name}, do not worry. ${goingTo(Speech.time)}${text}`);
+    await Speech.say(`${name}, ${tr('do not worry.', 'ne vous inquiétez pas.')} ${goingTo(Speech.time)}${text}`);
   };
 
   const arrived = () => {
-    const text = `${SampleData.user.name}, you have arrived. ${walk.title}.`;
+    const text = tr(`${SampleData.user.name}, you have arrived. ${walk.title}.`, `${SampleData.user.name}, vous êtes arrivé·e. ${walk.title}.`);
     end();
     message = '';
     help = text;
     const box = document.getElementById('walk');
     if (box) box.innerHTML = `<div class="card walk-help"><p>${esc(text)}</p></div>
-      <p class="page-action"><a class="button primary" href="#/">Back to today</a></p>`;
+      <p class="page-action"><a class="button primary" href="#/">${tr('Back to today', 'Revenir à aujourd’hui')}</a></p>`;
     say(text);
   };
 
@@ -286,28 +296,29 @@ const Walk = (() => {
 
   const begin = async (eventId) => {
     const event = SampleData.events.find((e) => e.id === eventId);
-    if (!event || !event.lat) { showError('This event has no place on the map.'); return; }
+    if (!event || !event.lat) { showError(tr('This event has no place on the map.', 'Ce rendez-vous n’a pas de lieu sur la carte.')); return; }
     if (walk && walk.eventId === eventId && walk.route) { drawWay(); watch(); return; }
     end();
-    message = 'Looking where you are…';
+    message = tr('Looking where you are…', 'Je regarde où vous êtes…');
     paintMessage();
     const position = await locate();
     if (!position) {
-      showError('I cannot see where you are. Allow Near to use the position of the phone, then try again.');
+      showError(tr('I cannot see where you are. Allow Near to use the position of the phone, then try again.', 'Je ne vois pas où vous êtes. Autorisez Near à utiliser la position du téléphone, puis réessayez.'));
       return;
     }
     here = position;
     const to = [event.lat, event.lon];
     const distance = metres(here.at, to);
     if (distance > TOO_FAR_KM * 1000) {
-      showError(`${event.title} is ${far(distance)} from here: too far to walk. Ask someone to drive you, or take a taxi.`, to);
+      showError(tr(`${event.title} is ${far(distance)} from here: too far to walk. Ask someone to drive you, or take a taxi.`,
+        `${event.title} : c'est à ${far(distance)} d'ici, trop loin pour y aller à pied. Demandez à quelqu'un de vous conduire, ou prenez un taxi.`), to);
       return;
     }
-    message = 'Looking for the way…';
+    message = tr('Looking for the way…', 'Je cherche le chemin…');
     paintMessage();
     let route;
     try { route = await fetchRoute(here.at, to); } catch {
-      showError('I could not find the way. The internet may not be reachable.', to);
+      showError(tr('I could not find the way. The internet may not be reachable.', 'Je n’ai pas trouvé le chemin. Internet n’est peut-être pas joignable.'), to);
       return;
     }
     walk = {
@@ -320,20 +331,21 @@ const Walk = (() => {
     if (route.steps[0]) route.steps[0].said = true;
     paint();
     watch();
-    say(`Let's go. ${walk.title}. It is about ${minutes(route.seconds)} minutes on foot. ${message}`);
+    say(tr(`Let's go. ${walk.title}. It is about ${minutes(route.seconds)} minutes on foot. ${message}`,
+      `Allons-y. ${walk.title}. C'est à environ ${minutes(route.seconds)} minutes à pied. ${message}`));
   };
 
   // ---- The screen ----
 
   const view = () => `
-    <a class="back" href="#/">← Back</a>
+    <a class="back" href="#/">← ${tr('Back', 'Retour')}</a>
     <div id="walk"></div>`;
 
   const showError = (text, to) => {
     const box = document.getElementById('walk');
     if (!box) return;
     box.innerHTML = `<p class="empty">${esc(text)}</p>
-      ${to ? `<p class="page-action"><a class="button" href="${googleMaps(to)}" target="_blank" rel="noopener">Open in Google Maps</a></p>` : ''}`;
+      ${to ? `<p class="page-action"><a class="button" href="${googleMaps(to)}" target="_blank" rel="noopener">${tr('Open in Google Maps', 'Ouvrir dans Google Maps')}</a></p>` : ''}`;
   };
 
   const paintMessage = () => {
@@ -355,20 +367,20 @@ const Walk = (() => {
     const start = new Date(walk.start);
     box.innerHTML = `
       <header class="page-head with-back">
-        <p class="hello-date">On the way</p>
+        <p class="hello-date">${tr('On the way', 'En chemin')}</p>
         <h1>${esc(walk.title)}</h1>
-        <p class="sub">${esc(walk.place || '')}${walk.place ? ', ' : ''}at ${esc(Dates.time(start))}</p>
+        <p class="sub">${esc(walk.place || '')}${walk.place ? ', ' : ''}${tr('at', 'à')} ${esc(Dates.time(start))}</p>
       </header>
       <div id="walk-help" class="card walk-help" role="status" hidden><p></p></div>
       <p class="walk-next" id="walk-next">${esc(message)}</p>
       <div id="walk-map" class="walk-map"></div>
-      <p class="source" id="walk-info">${esc(far(walk.route.metres))}, about ${minutes(walk.route.seconds)} minutes on foot.</p>
+      <p class="source" id="walk-info">${esc(onFoot())}</p>
       <div class="walk-actions">
-        <button class="button lost" type="button" data-walk="lost">I am lost</button>
-        <a class="button" href="${googleMaps(walk.to)}" target="_blank" rel="noopener">Open in Google Maps</a>
-        <button class="button" type="button" data-walk="stop">Stop the walk</button>
+        <button class="button lost" type="button" data-walk="lost">${tr('I am lost', 'Je suis perdu·e')}</button>
+        <a class="button" href="${googleMaps(walk.to)}" target="_blank" rel="noopener">${tr('Open in Google Maps', 'Ouvrir dans Google Maps')}</a>
+        <button class="button" type="button" data-walk="stop">${tr('Stop the walk', 'Arrêter la marche')}</button>
       </div>
-      <p class="source">Keep Near open on the screen: it watches the way only while it is showing. In Google Maps, it does not.</p>`;
+      <p class="source">${tr('Keep Near open on the screen: it watches the way only while it is showing. In Google Maps, it does not.', 'Gardez Near ouvert à l’écran : il ne surveille le chemin que quand il est affiché. Dans Google Maps, il ne le fait pas.')}</p>`;
     paintHelp();
     drawMap();
   };
@@ -398,7 +410,7 @@ const Walk = (() => {
     if (!box) return;
     let L;
     try { L = await loadLeaflet(); } catch {
-      box.innerHTML = '<p class="empty">The map could not be loaded. Follow what is written above.</p>';
+      box.innerHTML = `<p class="empty">${tr('The map could not be loaded. Follow what is written above.', 'La carte n’a pas pu être chargée. Suivez ce qui est écrit au-dessus.')}</p>`;
       return;
     }
     if (!document.body.contains(box) || !walk) return;
@@ -419,7 +431,7 @@ const Walk = (() => {
     if (marks.to) marks.to.remove();
     marks.way = L.polyline(walk.route.coords, { color: '#5B6249', weight: 9, opacity: 0.85 }).addTo(map);
     const info = document.getElementById('walk-info');
-    if (info) info.textContent = `${far(walk.route.metres)}, about ${minutes(walk.route.seconds)} minutes on foot.`;
+    if (info) info.textContent = onFoot();
     marks.to = L.circleMarker(walk.to, { radius: 14, color: '#FFFFFF', weight: 4, fillColor: '#A04A35', fillOpacity: 1 }).addTo(map);
     map.fitBounds(marks.way.getBounds(), { padding: [30, 30] });
   };
@@ -447,7 +459,7 @@ const Walk = (() => {
     });
     if (arg && (!walk || walk.eventId !== arg)) begin(arg);
     else if (walk) { paint(); watch(); }
-    else showError('No walk is going on. Open the agenda and press "Take me there" on an event.');
+    else showError(tr('No walk is going on. Open the agenda and press "Take me there" on an event.', 'Aucune marche en cours. Ouvrez l’agenda et touchez « Y aller » sur un rendez-vous.'));
   };
 
   // ---- Elsewhere in the app ----
@@ -456,14 +468,14 @@ const Walk = (() => {
   const homeBlock = () => (walk ? `
     <section>
       <a class="card link-card walk-home" href="#/walk">
-        <p>You are on your way to: <strong>${esc(walk.title)}</strong></p>
-        <span class="more">Show me the way</span>
+        <p>${tr('You are on your way to:', 'Vous êtes en chemin vers :')} <strong>${esc(walk.title)}</strong></p>
+        <span class="more">${tr('Show me the way', 'Me montrer le chemin')}</span>
       </a>
     </section>` : '');
 
   // "Take me there" on an event that is still to come and has a place on the map.
   const button = (event, now) => (event.lat && event.start > now - 3600000 ? `
-    <a class="button primary event-go" href="#/walk/${esc(event.id)}">Take me there</a>` : '');
+    <a class="button primary event-go" href="#/walk/${esc(event.id)}">${tr('Take me there', 'Y aller')}</a>` : '');
 
   // When the app opens on a walk that was going on: watch again.
   const start = () => { if (walk) watch(); };

@@ -3,7 +3,7 @@
 // Together they take about ten minutes. They are written with the words a speech
 // model must learn for this app: requests to the assistant, days and times, family
 // links, and many Israeli first names and places. Each paragraph is one string.
-const ReadingTexts = [
+const ENGLISH_TEXTS = [
   {
     title: 'Part 1 — A Sunday in Tel Aviv',
     paragraphs: [
@@ -38,3 +38,42 @@ const ReadingTexts = [
     ],
   },
 ];
+
+// The same in French, for the French model: the requests said in French, with the same names and places.
+const FRENCH_TEXTS = [
+  {
+    title: 'Partie 1 — Un dimanche à Tel Aviv',
+    paragraphs: [
+      "Bonjour. Aujourd'hui, c'est dimanche, et la semaine commence à Tel Aviv. Qu'est-ce que j'ai aujourd'hui ? À neuf heures du matin, j'ai un café avec Elinor au café Carmel, à côté du marché Carmel. Elinor est ma sœur. Elle habite à Givatayim avec ses deux enfants, et elle travaille à la mairie de Ramat Gan.",
+      "À midi, je déjeune avec Lothan à Sarona. Lothan est ma cousine, et elle travaille dans la chimie à l'institut Weizmann, à Rehovot. Rappelle-toi que Lothan a commencé un nouveau travail le mois dernier. Qui est Lothan ? Comment je connais Lothan ? Nous avons grandi ensemble à Haïfa.",
+      "L'après-midi, j'ai rendez-vous avec le docteur Shapira à l'hôpital Ichilov, à quinze heures trente. Déplace le rendez-vous à seize heures, s'il te plaît. Non, annule. Garde-le à quinze heures trente. Où est-ce ? C'est à l'hôpital Ichilov, rue Weizmann.",
+      "Quand est-ce que je vois Saba ? Saba est mon grand-père. Il a quatre-vingt-onze ans et il habite à Jérusalem, près du marché Mahane Yehuda. Je vais le voir mardi avec mon frère Yonatan. Nous prenons le train de dix heures depuis la gare Savidor, et nous rentrons le soir.",
+      "Ce soir, Tamar et Avi viennent dîner à dix-neuf heures. Tamar est ma voisine et Avi est son mari. Ils sont arrivés de Beer Sheva il y a deux ans. Qu'est-ce que j'ai fait hier ? Hier, c'était Shabbat. Je suis allée au parc Leumi avec Ilan, et nous avons mangé du houmous à Jaffa.",
+      "Quelle heure est-il ? Il est huit heures et quart. Quel jour sommes-nous ? Nous sommes dimanche. Merci. C'est tout pour l'instant.",
+    ],
+  },
+  {
+    title: 'Partie 2 — Mes proches, et comment je les connais',
+    paragraphs: [
+      "Je veux ajouter quelques personnes. Ajoute une nouvelle personne, elle s'appelle Shira. Shira est ma nièce, la fille de Yonatan. Elle étudie la médecine à l'Université hébraïque de Jérusalem. Ajoute une nouvelle personne qui s'appelle Nadav. Nadav est le mari de Shira. Je l'ai rencontré au mariage à Césarée.",
+      "Qui est Dana ? Dana est ma tante. C'est la sœur de mon père, et elle habite à Netanya, près de la mer. Son fils Gal travaille au port d'Ashdod, et sa fille Ronit est professeure à Petah Tikva. Dana et Ronit viennent pour Rosh Hashana.",
+      "Donne-moi des informations sur Lior. Lior est mon neveu. Il joue au basket à Holon le lundi et le jeudi, et le vendredi matin il aide sa grand-mère Dvora à Bat Yam. Des nouvelles de Hila ? Hila est l'amie de Lior. Rappelle-toi que Hila a eu son permis de conduire.",
+      "Tal est mon collègue. Nous avons travaillé ensemble à Ramat Gan, dans la tour à côté de la Bourse du diamant. Amit est son frère. Amit et Tal sont jumeaux, et je les confonds toujours. Note sur Amit : il a un nouveau chien qui s'appelle Bamba.",
+      "Elle est ma tante. Il est mon grand-père. Ce sont mes voisins. Roni est ma petite-fille et Ido est mon petit-fils. Roni a sept ans et Ido a quatre ans. Ils habitent à Zichron Yaakov, et pendant les fêtes nous allons tous ensemble à la plage de Dor.",
+      "Qui est Elinor ? Comment je connais Lothan ? Quand est-ce que je vois Ilan ? Voulez-vous dire Ilana ? Non, je veux dire Ilan. Voulez-vous dire Saba ? Oui. C'est Givatayim ? Oui, Givatayim. C'est Leumi ? Oui, le parc Leumi.",
+    ],
+  },
+  {
+    title: 'Partie 3 — Projets, changements et réponses courtes',
+    paragraphs: [
+      "Qu'est-ce que j'ai demain ? Demain, c'est lundi. À huit heures du matin, je vais à la piscine de Givatayim avec Yael. À dix heures, j'ai une réunion avec Michal à Azrieli, au troisième étage. À treize heures, je déjeune avec ma fille Noa au marché de Levinsky.",
+      "Ajoute un café avec Ilan mercredi à seize heures au café Carmel. Ajoute un dîner avec Tamar et Avi jeudi à vingt heures à Jaffa. Je vais à la mer Morte vendredi avec Yonatan et Shira. Nous partons à sept heures du matin et nous rentrons avant Shabbat.",
+      "Déplace le déjeuner avec Elinor à quatorze heures. Repousse la réunion avec Michal à mardi. Change le lieu du dîner pour un restaurant du boulevard Rothschild. Annule mon rendez-vous avec le docteur Shapira. Le café avec Ilan sera plutôt à la boulangerie.",
+      "Quel jour ? Mercredi. À quelle heure ? À six heures moins le quart. Où est-ce ? À l'aéroport Ben Gourion, terminal trois. Avec qui ? Avec Nadav et Dana. Seule. Nulle part. À la maison. Près de Tel Aviv. Dans le parc.",
+      "Oui. Non. Oui, ajoute-le. Non, annule. Ouais. D'accord. Bien sûr. C'est ça. Ce n'est pas ça. Aucun de ceux-ci. Redis-le. Que puis-je dire ? Stop. Bonjour. Shalom. Merci beaucoup.",
+      "Rappelle-toi que les clés sont dans le bol bleu à côté de la porte. Retiens que le radiateur doit être réparé avant l'hiver. Une note : le code de l'immeuble est dans mon carnet. Cherche le radiateur. Où sont mes clés ? Est-ce que j'ai pris mes médicaments du matin ? La case est vide.",
+    ],
+  },
+];
+
+const ReadingTexts = I18n.fr ? FRENCH_TEXTS : ENGLISH_TEXTS;

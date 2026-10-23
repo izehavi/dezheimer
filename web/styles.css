@@ -790,3 +790,10 @@ button.button:disabled { opacity: 0.45; cursor: not-allowed; }
 .helped-day li.late { background: var(--warn-soft); }
 .helped-day li.late strong { color: var(--warn); }
 .now-early { margin-top: 20px; border-color: var(--warn); background: var(--warn-soft); color: var(--warn); font-weight: 700; font-size: 1.25rem; }
+
+/* ---- The language: English or French (i18n.js) ---- */
+
+.langs { display: inline-flex; gap: 6px; padding: 4px; margin-bottom: 22px; background: var(--surface); border: 1.5px solid var(--line); border-radius: 999px; }
+.lang { min-height: 48px; padding: 6px 20px; border: 0; border-radius: 999px; background: transparent; font: inherit; font-weight: 600; color: var(--muted); cursor: pointer; }
+.lang.chosen { background: var(--accent); color: #FFFFFF; }
+section > .langs { margin-bottom: 0; }

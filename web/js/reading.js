@@ -9,7 +9,7 @@
 const Reading = (() => {
   const PEOPLE_KEY = 'dezheimer.myPeople';
   const PLACES_KEY = 'dezheimer.myPlaces';
-  const DONE_KEY = 'dezheimer.textsRead';
+  const DONE_KEY = `dezheimer.textsRead${I18n.fr ? '.fr' : ''}`;   // the texts of each language apart
   const SAMPLE_RATE = 16000;
   const PIECE_S = 8;             // the sound is sent in pieces of this many seconds
   const TRIES = 4;               // a piece that does not arrive is sent again
@@ -141,16 +141,17 @@ const Reading = (() => {
       const kept = await post('done', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: text.title, text: text.paragraphs.join('\n\n'), pieces }),
+        body: JSON.stringify({ title: text.title, text: text.paragraphs.join('\n\n'), pieces, lang: I18n.lang }),
       });
       markRead(part);
-      note(`Thank you. ${minutes(kept.seconds)} of your voice were kept.`);
+      note(tr(`Thank you. ${minutes(kept.seconds)} of your voice were kept.`, `Merci. ${minutes(kept.seconds)} de votre voix ont été gardées.`));
       if (total) total = { readings: total.readings + 1, minutes: Math.round((total.minutes + kept.seconds / 60) * 10) / 10 };
       // The next text that was not read yet, if there is one.
       const next = ReadingTexts.findIndex((_, i) => !read().includes(i));
       if (next >= 0) part = next;
     } catch (err) {
-      note(`This reading could not be kept: ${err.message}. Check that the computer is on, and read it again.`, true);
+      note(tr(`This reading could not be kept: ${err.message}. Check that the computer is on, and read it again.`,
+        `Cette lecture n’a pas pu être gardée : ${err.message}. Vérifiez que l’ordinateur est allumé, et relisez-la.`), true);
     }
     state = 'choose';
     paint();
@@ -167,10 +168,10 @@ const Reading = (() => {
   // ---- Screen ----
 
   const view = () => `
-    <a class="back" href="#/">← Back</a>
+    <a class="back" href="#/">← ${tr('Back', 'Retour')}</a>
     <header class="page-head with-back">
-      <h1>Teach the app my voice</h1>
-      <p class="sub">Read a text aloud, from start to end. The three texts take about ten minutes.</p>
+      <h1>${tr('Teach the app my voice', 'Apprendre ma voix à l’application')}</h1>
+      <p class="sub">${tr('Read a text aloud, from start to end. The three texts take about ten minutes.', 'Lisez un texte à voix haute, du début à la fin. Les trois textes prennent environ dix minutes.')}</p>
     </header>
     <div id="reading"></div>`;
 
@@ -185,17 +186,17 @@ const Reading = (() => {
         <div class="reading-bar">
           <span class="reading-on">● <span id="reading-clock">0:00</span></span>
           <div class="reading-meter"><span id="reading-level"></span></div>
-          <button class="button primary" type="button" data-do="stop">I have finished</button>
+          <button class="button primary" type="button" data-do="stop">${tr('I have finished', 'J’ai fini')}</button>
         </div>
         <article class="card reading-text">
           <h2>${esc(text.title)}</h2>
           ${text.paragraphs.map((p) => `<p>${esc(p)}</p>`).join('')}
         </article>
-        <p class="page-action"><button class="button primary big" type="button" data-do="stop">I have finished</button></p>`;
+        <p class="page-action"><button class="button primary big" type="button" data-do="stop">${tr('I have finished', 'J’ai fini')}</button></p>`;
       return;
     }
     if (state === 'sending') {
-      box.innerHTML = '<p class="listen-status" role="status">Sending the end of the reading to the computer…</p>';
+      box.innerHTML = `<p class="listen-status" role="status">${tr('Sending the end of the reading to the computer…', 'J’envoie la fin de la lecture à l’ordinateur…')}</p>`;
       return;
     }
 
@@ -207,25 +208,25 @@ const Reading = (() => {
         ${ReadingTexts.map((t, i) => `
           <button class="place-choice${i === part ? ' chosen' : ''}" type="button" data-part="${i}" aria-pressed="${i === part}">
             <strong>${esc(t.title)}</strong>
-            <span>${done.includes(i) ? 'Read ✓ — you can read it again' : 'Not read yet'}</span>
+            <span>${done.includes(i) ? tr('Read ✓ — you can read it again', 'Lu ✓ — vous pouvez le relire') : tr('Not read yet', 'Pas encore lu')}</span>
           </button>`).join('')}
       </div>
       <p class="page-action">
-        <button class="button primary big" type="button" data-do="start">Start reading</button>
+        <button class="button primary big" type="button" data-do="start">${tr('Start reading', 'Commencer la lecture')}</button>
       </p>
-      <p class="source">Read at your usual pace, as you would speak to the app. If you make a mistake, just go on:
-        a part that does not match the text is left out. The sound is kept on the computer that runs Near.</p>
-      ${total ? `<p class="source">Kept on the computer so far: ${total.readings} ${total.readings === 1 ? 'reading' : 'readings'}, about ${total.minutes} minutes.</p>` : ''}
+      <p class="source">${tr('Read at your usual pace, as you would speak to the app. If you make a mistake, just go on: a part that does not match the text is left out. The sound is kept on the computer that runs Near.', 'Lisez à votre rythme habituel, comme vous parleriez à l’application. Si vous vous trompez, continuez : un passage qui ne correspond pas au texte est mis de côté. Le son est gardé sur l’ordinateur où tourne Near.')}</p>
+      ${total ? `<p class="source">${tr(`Kept on the computer so far: ${total.readings} ${total.readings === 1 ? 'reading' : 'readings'}, about ${total.minutes} minutes.`,
+        `Gardé sur l’ordinateur jusqu’ici : ${total.readings} ${total.readings === 1 ? 'lecture' : 'lectures'}, environ ${total.minutes} minutes.`)}</p>` : ''}
       <article class="card reading-text preview">
         <h2>${esc(text.title)}</h2>
         ${text.paragraphs.map((p) => `<p>${esc(p)}</p>`).join('')}
       </article>
       <div class="account-form reading-words">
-        <label>People you talk about (names, with commas)
+        <label>${tr('People you talk about (names, with commas)', 'Les personnes dont vous parlez (des prénoms, séparés par des virgules)')}
           <input type="text" id="my-people" autocomplete="off" value="${esc(mine.people)}" placeholder="Elinor, Lothan, Ilan"></label>
-        <label>Places you go to
-          <input type="text" id="my-places" autocomplete="off" value="${esc(mine.places)}" placeholder="Carmel coffee, Park Leumi"></label>
-        <p class="source">These words are given to the app so that it writes them right when you talk to it.</p>
+        <label>${tr('Places you go to', 'Les lieux où vous allez')}
+          <input type="text" id="my-places" autocomplete="off" value="${esc(mine.places)}" placeholder="${tr('Carmel coffee, Park Leumi', 'Café Carmel, parc Leumi')}"></label>
+        <p class="source">${tr('These words are given to the app so that it writes them right when you talk to it.', 'Ces mots sont donnés à l’application, pour qu’elle les écrive bien quand vous lui parlez.')}</p>
       </div>`;
   };
 

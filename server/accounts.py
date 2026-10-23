@@ -69,6 +69,10 @@ def _db():
             PRIMARY KEY (person_id, task_id, day, what));
         CREATE TABLE IF NOT EXISTS presence (user_id INTEGER PRIMARY KEY, at REAL NOT NULL);
     """)
+    # Columns added after the tables were first made: the language of a phone, of a routine.
+    for table in ("subscriptions", "routines"):
+        if "lang" not in {row[1] for row in db.execute(f"PRAGMA table_info({table})")}:
+            db.execute(f"ALTER TABLE {table} ADD COLUMN lang TEXT")
     try:
         with db:
             yield db
@@ -243,20 +247,21 @@ def unlink(user_id, other_id):
 ALERTS_SHOWN_SECONDS = 24 * 3600
 
 
-def subscribe(user_id, endpoint, p256dh, auth):
-    """Keep where to send notifications to this user's phone (push.py)."""
+def subscribe(user_id, endpoint, p256dh, auth, lang="en"):
+    """Keep where to send notifications to this user's phone (push.py), and in which language."""
     with _db() as db:
         db.execute(
-            "INSERT INTO subscriptions VALUES (?, ?, ?, ?, ?) ON CONFLICT(endpoint) DO UPDATE SET "
-            "user_id = excluded.user_id, p256dh = excluded.p256dh, auth = excluded.auth",
-            (endpoint, user_id, p256dh, auth, time.time()),
+            "INSERT INTO subscriptions (endpoint, user_id, p256dh, auth, created, lang) VALUES (?, ?, ?, ?, ?, ?) "
+            "ON CONFLICT(endpoint) DO UPDATE SET user_id = excluded.user_id, p256dh = excluded.p256dh, "
+            "auth = excluded.auth, lang = excluded.lang",
+            (endpoint, user_id, p256dh, auth, time.time(), lang),
         )
 
 
 def subscriptions(user_id):
     with _db() as db:
-        rows = db.execute("SELECT endpoint, p256dh, auth FROM subscriptions WHERE user_id = ?", (user_id,)).fetchall()
-    return [{"endpoint": e, "p256dh": k, "auth": a} for e, k, a in rows]
+        rows = db.execute("SELECT endpoint, p256dh, auth, lang FROM subscriptions WHERE user_id = ?", (user_id,)).fetchall()
+    return [{"endpoint": e, "p256dh": k, "auth": a, "lang": lang or "en"} for e, k, a, lang in rows]
 
 
 def unsubscribe(endpoint):
@@ -302,7 +307,7 @@ def person_name(person_id):
 KEEP_DAYS = 8
 
 
-def set_routine(person_id, name, tasks, zone, offset, done, days):
+def set_routine(person_id, name, tasks, zone, offset, done, days, lang="en"):
     """Keep the person's things to do each day, and what was done on `days` ("YYYY-MM-DD").
 
     `done`: [{"task_id", "day", "at" (milliseconds since 1970), "how"}]. What is kept for
@@ -310,10 +315,10 @@ def set_routine(person_id, name, tasks, zone, offset, done, days):
     """
     with _db() as db:
         db.execute(
-            "INSERT INTO routines VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT(person_id) DO UPDATE SET "
-            "name = excluded.name, tasks = excluded.tasks, zone = excluded.zone, offset = excluded.offset, "
-            "updated = excluded.updated",
-            (person_id, name, json.dumps(tasks), zone, offset, time.time()),
+            "INSERT INTO routines (person_id, name, tasks, zone, offset, updated, lang) VALUES (?, ?, ?, ?, ?, ?, ?) "
+            "ON CONFLICT(person_id) DO UPDATE SET name = excluded.name, tasks = excluded.tasks, zone = excluded.zone, "
+            "offset = excluded.offset, updated = excluded.updated, lang = excluded.lang",
+            (person_id, name, json.dumps(tasks), zone, offset, time.time(), lang),
         )
         for day in days:
             db.execute("DELETE FROM done WHERE person_id = ? AND day = ?", (person_id, day))
@@ -329,8 +334,9 @@ def set_routine(person_id, name, tasks, zone, offset, done, days):
 
 def routines():
     with _db() as db:
-        rows = db.execute("SELECT person_id, name, tasks, zone, offset FROM routines").fetchall()
-    return [{"id": i, "name": n, "tasks": json.loads(t), "zone": z, "offset": o} for i, n, t, z, o in rows]
+        rows = db.execute("SELECT person_id, name, tasks, zone, offset, lang FROM routines").fetchall()
+    return [{"id": i, "name": n, "tasks": json.loads(t), "zone": z, "offset": o, "lang": lang or "en"}
+            for i, n, t, z, o, lang in rows]
 
 
 def routine_of(person_id):

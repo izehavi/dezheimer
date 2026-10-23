@@ -16,7 +16,17 @@
 
   // The icons of the tabs (icons.js).
   const TAB_ICONS = { home: 'home', agenda: 'calendar', people: 'people', diary: 'book', listen: 'mic' };
-  tabs.forEach((a) => { a.querySelector('.tab-icon').innerHTML = Icons.icon(TAB_ICONS[a.dataset.tab]); });
+  const TAB_NAMES = {
+    home: tr('Today', 'Aujourd’hui'), agenda: tr('Agenda', 'Agenda'), people: tr('People', 'Proches'),
+    diary: tr('Diary', 'Journal'), listen: tr('Listen', 'Écouter'),
+  };
+  tabs.forEach((a) => {
+    a.querySelector('.tab-icon').innerHTML = Icons.icon(TAB_ICONS[a.dataset.tab]);
+    a.lastChild.textContent = TAB_NAMES[a.dataset.tab];
+  });
+  // The buttons of the reminder, in the language of the app.
+  document.getElementById('reminder-go').textContent = tr('Take me there', 'Y aller');
+  document.getElementById('reminder-done').textContent = tr('Done', 'Fait');
 
   const role = Relatives.role();
   // A relative's phone has its own small app, without the tabs of the person's app.

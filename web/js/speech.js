@@ -9,22 +9,27 @@ const Speech = (() => {
   // Voices known to be clear, best first.
   const GOOD = [/natural/i, /samantha|daniel|karen|serena|ava|allison|susan/i, /google (uk|us) english/i, /zira|hazel|aria|jenny|sonia|libby/i];
 
-  // An English voice, never the voice of another language: a French voice reading
-  // English is very hard to follow.
+  // Voices known to be clear in French, best first.
+  const GOOD_FR = [/natural/i, /audrey|thomas|amelie|amélie|marie/i, /google fran/i, /denise|henri|hortense|julie|paul/i];
+
+  // A voice of the language of the app, never the voice of another language: a French
+  // voice reading English, or the other way round, is very hard to follow.
   const pickVoice = () => {
-    const english = speechSynthesis.getVoices()
-      .filter((v) => /^en([-_]|$)/i.test(v.lang) && !NOT_A_VOICE.test(v.name));
+    const mine = new RegExp(`^${I18n.lang}([-_]|$)`, 'i');
+    const usual = I18n.fr ? /^fr[-_]FR/i : /^en[-_](GB|US)/i;   // the accents most people are used to
+    const good = I18n.fr ? GOOD_FR : GOOD;
+    const voices = speechSynthesis.getVoices().filter((v) => mine.test(v.lang) && !NOT_A_VOICE.test(v.name));
     const rank = (v) => {
-      const known = GOOD.findIndex((names) => names.test(v.name));
-      return (known < 0 ? GOOD.length : known) * 4
-        + (/^en[-_](GB|US)/i.test(v.lang) ? 0 : 2)   // the accents most people are used to
+      const known = good.findIndex((names) => names.test(v.name));
+      return (known < 0 ? good.length : known) * 4
+        + (usual.test(v.lang) ? 0 : 2)
         + (v.localService ? 0 : 1);                   // on the device rather than online
     };
-    voice = english.sort((a, b) => rank(a) - rank(b))[0] || null;
+    voice = voices.sort((a, b) => rank(a) - rank(b))[0] || null;
   };
 
-  // True when the device has voices, and none of them is English.
-  const noEnglish = () => supported && !voice && speechSynthesis.getVoices().length > 0;
+  // True when the device has voices, and none of them in the language of the app.
+  const noVoice = () => supported && !voice && speechSynthesis.getVoices().length > 0;
 
   if (supported) {
     pickVoice();
@@ -38,7 +43,7 @@ const Speech = (() => {
     if (!voice) pickVoice();   // the list of voices often comes after the page
     const utterance = new SpeechSynthesisUtterance(text);
     if (voice) utterance.voice = voice;
-    utterance.lang = voice ? voice.lang : 'en-US';
+    utterance.lang = voice ? voice.lang : I18n.locale;
     utterance.rate = 0.9; // a little slower than normal, easier to follow
     // Some browsers never signal the end; do not wait for ever.
     const giveUp = setTimeout(resolve, 3000 + text.length * 90);
@@ -60,14 +65,20 @@ const Speech = (() => {
   }
 
   // "15:30" -> "3 30 pm", "12:00" -> "12 noon": easier to hear than "fifteen thirty".
+  // In French: "15 heures 30", "midi".
   const time = (date) => {
     const h = date.getHours();
     const m = date.getMinutes();
+    if (I18n.fr) {
+      if (h === 12 && m === 0) return 'midi';
+      if (h === 0 && m === 0) return 'minuit';
+      return `${h} ${h === 1 ? 'heure' : 'heures'}${m ? ` ${String(m).padStart(2, '0')}` : ''}`;
+    }
     if (h === 12 && m === 0) return '12 noon';
     if (h === 0 && m === 0) return 'midnight';
     const hour = h % 12 || 12;
     return `${hour}${m ? ` ${String(m).padStart(2, '0')}` : ''} ${h < 12 ? 'in the morning' : h < 18 ? 'in the afternoon' : 'in the evening'}`;
   };
 
-  return { say, stop, time, supported, noEnglish };
+  return { say, stop, time, supported, noVoice };
 })();

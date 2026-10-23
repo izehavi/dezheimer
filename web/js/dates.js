@@ -1,6 +1,8 @@
 // Date helpers. Days are identified by a "YYYY-MM-DD" key in local time.
 const Dates = (() => {
-  const LOCALE = 'en-GB';
+  const LOCALE = I18n.locale;
+  // In French, a date opens with a capital only at the start of a line: done where it is shown.
+  const capital = (s) => s.charAt(0).toUpperCase() + s.slice(1);
 
   const startOfDay = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
 
@@ -26,17 +28,17 @@ const Dates = (() => {
 
   const mondayOf = (d) => addDays(startOfDay(d), -((d.getDay() + 6) % 7));
 
-  const long = (d) => d.toLocaleDateString(LOCALE, { weekday: 'long', day: 'numeric', month: 'long' });
+  const long = (d) => capital(d.toLocaleDateString(LOCALE, { weekday: 'long', day: 'numeric', month: 'long' }));
   const weekdayShort = (d) => d.toLocaleDateString(LOCALE, { weekday: 'short' });
-  const monthYear = (d) => d.toLocaleDateString(LOCALE, { month: 'long', year: 'numeric' });
+  const monthYear = (d) => capital(d.toLocaleDateString(LOCALE, { month: 'long', year: 'numeric' }));
   const time = (d) => d.toLocaleTimeString(LOCALE, { hour: '2-digit', minute: '2-digit' });
 
   // "Today", "Yesterday", "Tomorrow", otherwise the full date.
   const relative = (d, today) => {
     const diff = daysBetween(today, d);
-    if (diff === 0) return 'Today';
-    if (diff === -1) return 'Yesterday';
-    if (diff === 1) return 'Tomorrow';
+    if (diff === 0) return tr('Today', "Aujourd'hui");
+    if (diff === -1) return tr('Yesterday', 'Hier');
+    if (diff === 1) return tr('Tomorrow', 'Demain');
     return long(d);
   };
 

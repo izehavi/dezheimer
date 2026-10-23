@@ -11,144 +11,144 @@ const SampleData = (() => {
     return d;
   };
 
-  const user = { name: 'Helen' };
+  const user = { name: tr('Helen', 'Hélène') };
 
   // `photo` is an optional image URL; without it the app shows the initials.
   const people = [
     {
-      id: 'sarah', name: 'Sarah', relationship: 'Your daughter', color: '#5B6249', photo: null,
+      id: 'sarah', name: 'Sarah', relationship: tr('Your daughter', 'Votre fille'), color: '#5B6249', photo: null,
       // `link` is the short label on the connections graph; `origin` is how the user knows them.
-      link: 'daughter',
-      origin: 'She is your daughter, your first child.',
+      link: tr('daughter', 'fille'),
+      origin: tr('She is your daughter, your first child.', 'C’est votre fille, votre premier enfant.'),
       facts: [
-        'Lives 15 minutes away with her children, Leo and Emma.',
-        'Works as a nurse at the hospital.',
-        'Calls you every evening around 7.',
+        tr('Lives 15 minutes away with her children, Leo and Emma.', 'Habite à 15 minutes, avec ses enfants, Leo et Emma.'),
+        tr('Works as a nurse at the hospital.', 'Est infirmière à l’hôpital.'),
+        tr('Calls you every evening around 7.', 'Vous appelle tous les soirs vers 19 heures.'),
       ],
     },
     {
-      id: 'david', name: 'David', relationship: 'Your son', color: '#4F6375', photo: null,
-      link: 'son',
-      origin: 'He is your son, two years younger than Sarah.',
+      id: 'david', name: 'David', relationship: tr('Your son', 'Votre fils'), color: '#4F6375', photo: null,
+      link: tr('son', 'fils'),
+      origin: tr('He is your son, two years younger than Sarah.', 'C’est votre fils, deux ans plus jeune que Sarah.'),
       facts: [
-        'Lives in Lyon with his wife, Claire.',
-        'Works as an engineer.',
-        'Visits about once a month.',
+        tr('Lives in Lyon with his wife, Claire.', 'Habite à Lyon avec sa femme, Claire.'),
+        tr('Works as an engineer.', 'Est ingénieur.'),
+        tr('Visits about once a month.', 'Vient vous voir environ une fois par mois.'),
       ],
     },
     {
-      id: 'leo', name: 'Leo', relationship: 'Your grandson', color: '#85633A', photo: null,
-      link: 'grandson',
-      origin: "He is Sarah's son, and your first grandchild.",
+      id: 'leo', name: 'Leo', relationship: tr('Your grandson', 'Votre petit-fils'), color: '#85633A', photo: null,
+      link: tr('grandson', 'petit-fils'),
+      origin: tr("He is Sarah's son, and your first grandchild.", 'C’est le fils de Sarah, et votre premier petit-enfant.'),
       facts: [
-        'Son of Sarah. He is 19.',
-        'Studies biology at university in Paris.',
-        'Plays the guitar.',
+        tr('Son of Sarah. He is 19.', 'Fils de Sarah. Il a 19 ans.'),
+        tr('Studies biology at university in Paris.', 'Étudie la biologie à l’université, à Paris.'),
+        tr('Plays the guitar.', 'Joue de la guitare.'),
       ],
     },
     {
-      id: 'emma', name: 'Emma', relationship: 'Your granddaughter', color: '#8C5A63', photo: null,
-      link: 'granddaughter',
-      origin: "She is Sarah's daughter, and Leo's little sister.",
+      id: 'emma', name: 'Emma', relationship: tr('Your granddaughter', 'Votre petite-fille'), color: '#8C5A63', photo: null,
+      link: tr('granddaughter', 'petite-fille'),
+      origin: tr("She is Sarah's daughter, and Leo's little sister.", 'C’est la fille de Sarah, et la petite sœur de Leo.'),
       facts: [
-        'Daughter of Sarah. She is in high school.',
-        `Her 16th birthday is on ${Dates.long(at(4))}.`,
-        'Loves horse riding.',
+        tr('Daughter of Sarah. She is in high school.', 'Fille de Sarah. Elle est au lycée.'),
+        tr(`Her 16th birthday is on ${Dates.long(at(4))}.`, `Ses 16 ans, c’est le ${Dates.long(at(4)).toLowerCase()}.`),
+        tr('Loves horse riding.', 'Adore l’équitation.'),
       ],
     },
     {
-      id: 'rose', name: 'Rose', relationship: 'Your friend and neighbour', color: '#6C5E7E', photo: null,
-      link: 'friend, neighbour',
-      origin: 'You met in 1995, when you moved into the street. She was the first neighbour to welcome you.',
+      id: 'rose', name: 'Rose', relationship: tr('Your friend and neighbour', 'Votre amie et voisine'), color: '#6C5E7E', photo: null,
+      link: tr('friend, neighbour', 'amie, voisine'),
+      origin: tr('You met in 1995, when you moved into the street. She was the first neighbour to welcome you.', 'Vous vous êtes rencontrées en 1995, quand vous avez emménagé dans la rue. C’est la première voisine qui vous a accueillie.'),
       facts: [
-        'Lives at number 12, on your street.',
-        'You have been friends for 30 years.',
-        'You often walk in the park together.',
+        tr('Lives at number 12, on your street.', 'Habite au numéro 12, dans votre rue.'),
+        tr('You have been friends for 30 years.', 'Vous êtes amies depuis 30 ans.'),
+        tr('You often walk in the park together.', 'Vous vous promenez souvent ensemble au parc.'),
       ],
     },
     {
-      id: 'paul', name: 'Paul', relationship: 'Your friend', color: '#5A7050', photo: null,
-      link: 'friend, former colleague',
-      origin: 'You met at Jules Ferry school, where you both taught for twenty years.',
+      id: 'paul', name: 'Paul', relationship: tr('Your friend', 'Votre ami'), color: '#5A7050', photo: null,
+      link: tr('friend, former colleague', 'ami, ancien collègue'),
+      origin: tr('You met at Jules Ferry school, where you both taught for twenty years.', 'Vous vous êtes rencontrés à l’école Jules Ferry, où vous avez enseigné tous les deux pendant vingt ans.'),
       facts: [
-        'You both taught at the same school.',
-        'He is retired, like you.',
-        'Loves chess.',
+        tr('You both taught at the same school.', 'Vous avez enseigné dans la même école.'),
+        tr('He is retired, like you.', 'Il est à la retraite, comme vous.'),
+        tr('Loves chess.', 'Adore les échecs.'),
       ],
     },
     {
-      id: 'martin', name: 'Dr. Martin', relationship: 'Your doctor', color: '#4E6B73', photo: null,
-      link: 'doctor',
-      origin: 'He has been your family doctor since 2010. Sarah found him for you.',
+      id: 'martin', name: 'Dr. Martin', relationship: tr('Your doctor', 'Votre médecin'), color: '#4E6B73', photo: null,
+      link: tr('doctor', 'médecin'),
+      origin: tr('He has been your family doctor since 2010. Sarah found him for you.', 'C’est votre médecin de famille depuis 2010. Sarah l’a trouvé pour vous.'),
       facts: [
-        'Your family doctor for many years.',
-        'The office is on Garden Street, 10 minutes by car.',
-        'Sarah usually drives you there.',
+        tr('Your family doctor for many years.', 'Votre médecin de famille depuis de longues années.'),
+        tr('The office is on Garden Street, 10 minutes by car.', 'Le cabinet est rue des Jardins, à 10 minutes en voiture.'),
+        tr('Sarah usually drives you there.', 'Sarah vous y conduit d’habitude.'),
       ],
     },
     {
-      id: 'nadia', name: 'Nadia', relationship: 'Your home helper', color: '#9A5B43', photo: null,
-      link: 'home helper',
-      origin: 'She started helping you at home last year. Sarah arranged it with the home help service.',
+      id: 'nadia', name: 'Nadia', relationship: tr('Your home helper', 'Votre aide à domicile'), color: '#9A5B43', photo: null,
+      link: tr('home helper', 'aide à domicile'),
+      origin: tr('She started helping you at home last year. Sarah arranged it with the home help service.', 'Elle vient vous aider à la maison depuis l’an dernier. Sarah s’en est occupée avec le service d’aide à domicile.'),
       facts: [
-        'Comes several mornings a week at 9.',
-        'Helps with the shopping and the cooking.',
-        'She has a key to the house.',
+        tr('Comes several mornings a week at 9.', 'Vient plusieurs matins par semaine à 9 heures.'),
+        tr('Helps with the shopping and the cooking.', 'Aide pour les courses et la cuisine.'),
+        tr('She has a key to the house.', 'Elle a une clé de la maison.'),
       ],
     },
   ];
 
   // News about a person. `date` is the day of the conversation it comes from.
   const memos = [
-    { personId: 'sarah', date: at(-3), text: 'Sarah is moving to day shifts at the hospital next month. She is happy: her evenings will be free.' },
-    { personId: 'sarah', date: at(-8), text: 'Sarah is repainting her kitchen in yellow.' },
-    { personId: 'david', date: at(-1), text: 'David and Claire are expecting a baby in the spring. It will be your third grandchild.' },
-    { personId: 'david', date: at(-12), text: 'David got a promotion. He now leads a team of six people.' },
-    { personId: 'leo', date: at(-3), text: 'Leo passed his first exams. He joined a band and they play a concert next month.' },
-    { personId: 'leo', date: at(-15), text: 'Leo moved into a student flat with two friends.' },
-    { personId: 'emma', date: at(-3), text: 'Emma came second in her riding competition. Her horse is called Caramel.' },
-    { personId: 'emma', date: at(-10), text: 'Emma would like a riding helmet for her birthday.' },
-    { personId: 'rose', date: at(-6), text: 'Rose\'s daughter, Anne, is coming from Canada for Christmas.' },
-    { personId: 'rose', date: at(-14), text: 'Rose had a knee operation. She is walking well again.' },
-    { personId: 'paul', date: at(-9), text: 'Paul is back from a trip to Italy. He will bring photos next time.' },
-    { personId: 'martin', date: at(-5), text: 'Dr. Martin said everything looks fine. Nothing changes in your treatment.' },
-    { personId: 'nadia', date: at(-2), text: 'Nadia\'s son has just started primary school. She showed you a photo.' },
+    { personId: 'sarah', date: at(-3), text: tr('Sarah is moving to day shifts at the hospital next month. She is happy: her evenings will be free.', 'Sarah passe en horaires de jour à l’hôpital le mois prochain. Elle est contente : ses soirées seront libres.') },
+    { personId: 'sarah', date: at(-8), text: tr('Sarah is repainting her kitchen in yellow.', 'Sarah repeint sa cuisine en jaune.') },
+    { personId: 'david', date: at(-1), text: tr('David and Claire are expecting a baby in the spring. It will be your third grandchild.', 'David et Claire attendent un bébé pour le printemps. Ce sera votre troisième petit-enfant.') },
+    { personId: 'david', date: at(-12), text: tr('David got a promotion. He now leads a team of six people.', 'David a eu une promotion. Il dirige maintenant une équipe de six personnes.') },
+    { personId: 'leo', date: at(-3), text: tr('Leo passed his first exams. He joined a band and they play a concert next month.', 'Leo a réussi ses premiers examens. Il joue dans un groupe, qui donne un concert le mois prochain.') },
+    { personId: 'leo', date: at(-15), text: tr('Leo moved into a student flat with two friends.', 'Leo a emménagé dans un appartement étudiant avec deux amis.') },
+    { personId: 'emma', date: at(-3), text: tr('Emma came second in her riding competition. Her horse is called Caramel.', 'Emma est arrivée deuxième à son concours d’équitation. Son cheval s’appelle Caramel.') },
+    { personId: 'emma', date: at(-10), text: tr('Emma would like a riding helmet for her birthday.', 'Emma aimerait une bombe d’équitation pour son anniversaire.') },
+    { personId: 'rose', date: at(-6), text: tr('Rose\'s daughter, Anne, is coming from Canada for Christmas.', 'La fille de Rose, Anne, vient du Canada pour Noël.') },
+    { personId: 'rose', date: at(-14), text: tr('Rose had a knee operation. She is walking well again.', 'Rose s’est fait opérer du genou. Elle marche de nouveau bien.') },
+    { personId: 'paul', date: at(-9), text: tr('Paul is back from a trip to Italy. He will bring photos next time.', 'Paul est rentré d’un voyage en Italie. Il apportera des photos la prochaine fois.') },
+    { personId: 'martin', date: at(-5), text: tr('Dr. Martin said everything looks fine. Nothing changes in your treatment.', 'Le docteur Martin a dit que tout allait bien. Rien ne change dans votre traitement.') },
+    { personId: 'nadia', date: at(-2), text: tr('Nadia\'s son has just started primary school. She showed you a photo.', 'Le fils de Nadia vient d’entrer à l’école primaire. Elle vous a montré une photo.') },
   ];
 
   const events = [
-    { id: 'e1', title: 'Coffee with Rose', start: at(-6, 15, 0), place: 'At Rose\'s home, number 12', personIds: ['rose'] },
-    { id: 'e2', title: 'Appointment with Dr. Martin', start: at(-5, 10, 30), place: 'Doctor\'s office, Garden Street', personIds: ['martin', 'sarah'], note: 'Sarah drives you.' },
-    { id: 'e3', title: 'Family lunch', start: at(-3, 12, 30), place: 'At Sarah\'s home', personIds: ['sarah', 'leo', 'emma'] },
-    { id: 'e4', title: 'Nadia comes to help', start: at(-2, 9, 0), place: 'At home', personIds: ['nadia'] },
-    { id: 'e5', title: 'Phone call with David', start: at(-1, 16, 0), place: 'At home', personIds: ['david'] },
+    { id: 'e1', title: tr('Coffee with Rose', 'Café avec Rose'), start: at(-6, 15, 0), place: tr('At Rose\'s home, number 12', 'Chez Rose, au numéro 12'), personIds: ['rose'] },
+    { id: 'e2', title: tr('Appointment with Dr. Martin', 'Rendez-vous avec le docteur Martin'), start: at(-5, 10, 30), place: tr('Doctor\'s office, Garden Street', 'Cabinet du médecin, rue des Jardins'), personIds: ['martin', 'sarah'], note: tr('Sarah drives you.', 'Sarah vous conduit.') },
+    { id: 'e3', title: tr('Family lunch', 'Déjeuner en famille'), start: at(-3, 12, 30), place: tr('At Sarah\'s home', 'Chez Sarah'), personIds: ['sarah', 'leo', 'emma'] },
+    { id: 'e4', title: tr('Nadia comes to help', 'Nadia vient vous aider'), start: at(-2, 9, 0), place: tr('At home', 'À la maison'), personIds: ['nadia'] },
+    { id: 'e5', title: tr('Phone call with David', 'Appel avec David'), start: at(-1, 16, 0), place: tr('At home', 'À la maison'), personIds: ['david'] },
 
-    { id: 'e6', title: 'Nadia comes to help', start: at(0, 9, 0), place: 'At home', personIds: ['nadia'], note: 'Shopping list is on the fridge.' },
-    { id: 'e7', title: 'Lunch with Sarah', start: at(0, 12, 30), place: 'At home', personIds: ['sarah'], note: 'Sarah brings the dessert.' },
-    { id: 'e8', title: 'Video call with Leo', start: at(0, 17, 0), place: 'At home, on the tablet', personIds: ['leo'] },
+    { id: 'e6', title: tr('Nadia comes to help', 'Nadia vient vous aider'), start: at(0, 9, 0), place: tr('At home', 'À la maison'), personIds: ['nadia'], note: tr('Shopping list is on the fridge.', 'La liste de courses est sur le frigo.') },
+    { id: 'e7', title: tr('Lunch with Sarah', 'Déjeuner avec Sarah'), start: at(0, 12, 30), place: tr('At home', 'À la maison'), personIds: ['sarah'], note: tr('Sarah brings the dessert.', 'Sarah apporte le dessert.') },
+    { id: 'e8', title: tr('Video call with Leo', 'Appel vidéo avec Leo'), start: at(0, 17, 0), place: tr('At home, on the tablet', 'À la maison, sur la tablette'), personIds: ['leo'] },
 
-    { id: 'e9', title: 'Walk in the park with Rose', start: at(1, 15, 0), place: 'Rose comes to pick you up', personIds: ['rose'] },
-    { id: 'e10', title: 'Appointment with Dr. Martin', start: at(2, 10, 30), place: 'Doctor\'s office, Garden Street', personIds: ['martin', 'sarah'], note: 'Sarah drives you. She arrives at 10.' },
-    { id: 'e11', title: 'Nadia comes to help', start: at(3, 9, 0), place: 'At home', personIds: ['nadia'] },
-    { id: 'e12', title: 'Emma\'s birthday lunch', start: at(4, 12, 0), place: 'At Sarah\'s home', personIds: ['emma', 'sarah', 'leo', 'david'], note: 'The present for Emma is in the hallway cupboard.' },
-    { id: 'e13', title: 'Tea with Paul', start: at(6, 14, 30), place: 'At home', personIds: ['paul'], note: 'Paul brings his photos of Italy.' },
+    { id: 'e9', title: tr('Walk in the park with Rose', 'Promenade au parc avec Rose'), start: at(1, 15, 0), place: tr('Rose comes to pick you up', 'Rose passe vous chercher'), personIds: ['rose'] },
+    { id: 'e10', title: tr('Appointment with Dr. Martin', 'Rendez-vous avec le docteur Martin'), start: at(2, 10, 30), place: tr('Doctor\'s office, Garden Street', 'Cabinet du médecin, rue des Jardins'), personIds: ['martin', 'sarah'], note: tr('Sarah drives you. She arrives at 10.', 'Sarah vous conduit. Elle arrive à 10 heures.') },
+    { id: 'e11', title: tr('Nadia comes to help', 'Nadia vient vous aider'), start: at(3, 9, 0), place: tr('At home', 'À la maison'), personIds: ['nadia'] },
+    { id: 'e12', title: tr('Emma\'s birthday lunch', 'Déjeuner d’anniversaire d’Emma'), start: at(4, 12, 0), place: tr('At Sarah\'s home', 'Chez Sarah'), personIds: ['emma', 'sarah', 'leo', 'david'], note: tr('The present for Emma is in the hallway cupboard.', 'Le cadeau d’Emma est dans le placard de l’entrée.') },
+    { id: 'e13', title: tr('Tea with Paul', 'Thé avec Paul'), start: at(6, 14, 30), place: tr('At home', 'À la maison'), personIds: ['paul'], note: tr('Paul brings his photos of Italy.', 'Paul apporte ses photos d’Italie.') },
   ];
 
   // One entry per day; some days have none.
   const diary = [
-    { date: at(-1), personIds: ['david'], text: 'A quiet day at home. In the afternoon David called from Lyon. He had big news: he and Claire are expecting a baby in the spring. You talked for half an hour. In the evening you watched a film about Italy.' },
-    { date: at(-2), personIds: ['nadia'], text: 'Nadia came in the morning. You went to the market together and bought apples, and she made an apple tart. She showed you a photo of her son on his first day of school.' },
-    { date: at(-3), personIds: ['sarah', 'leo', 'emma'], text: 'Lunch at Sarah\'s home with Leo and Emma. Sarah made roast chicken. Emma told everyone about her riding competition, where she came second. Leo played two songs on the guitar after dessert.' },
-    { date: at(-5), personIds: ['martin', 'sarah'], text: 'Sarah drove you to Dr. Martin in the morning. He said everything looks fine. Afterwards you had a coffee with Sarah at the bakery next door.' },
-    { date: at(-6), personIds: ['rose'], text: 'Coffee at Rose\'s home in the afternoon. She is very happy because her daughter Anne is coming from Canada for Christmas. You looked at old photos of the street together.' },
-    { date: at(-7), personIds: [], text: 'It rained all day. You stayed at home, did a crossword and sorted the letters on your desk. Sarah called in the evening.' },
+    { date: at(-1), personIds: ['david'], text: tr('A quiet day at home. In the afternoon David called from Lyon. He had big news: he and Claire are expecting a baby in the spring. You talked for half an hour. In the evening you watched a film about Italy.', 'Une journée calme à la maison. L’après-midi, David a appelé de Lyon. Il avait une grande nouvelle : Claire et lui attendent un bébé pour le printemps. Vous avez parlé une demi-heure. Le soir, vous avez regardé un film sur l’Italie.') },
+    { date: at(-2), personIds: ['nadia'], text: tr('Nadia came in the morning. You went to the market together and bought apples, and she made an apple tart. She showed you a photo of her son on his first day of school.', 'Nadia est venue le matin. Vous êtes allées au marché ensemble et avez acheté des pommes, et elle a fait une tarte aux pommes. Elle vous a montré une photo de son fils le jour de sa rentrée.') },
+    { date: at(-3), personIds: ['sarah', 'leo', 'emma'], text: tr('Lunch at Sarah\'s home with Leo and Emma. Sarah made roast chicken. Emma told everyone about her riding competition, where she came second. Leo played two songs on the guitar after dessert.', 'Déjeuner chez Sarah avec Leo et Emma. Sarah avait fait un poulet rôti. Emma a raconté son concours d’équitation, où elle est arrivée deuxième. Leo a joué deux chansons à la guitare après le dessert.') },
+    { date: at(-5), personIds: ['martin', 'sarah'], text: tr('Sarah drove you to Dr. Martin in the morning. He said everything looks fine. Afterwards you had a coffee with Sarah at the bakery next door.', 'Sarah vous a conduite chez le docteur Martin le matin. Il a dit que tout allait bien. Ensuite, vous avez pris un café avec Sarah à la boulangerie d’à côté.') },
+    { date: at(-6), personIds: ['rose'], text: tr('Coffee at Rose\'s home in the afternoon. She is very happy because her daughter Anne is coming from Canada for Christmas. You looked at old photos of the street together.', 'Café chez Rose l’après-midi. Elle est très heureuse, car sa fille Anne vient du Canada pour Noël. Vous avez regardé ensemble de vieilles photos de la rue.') },
+    { date: at(-7), personIds: [], text: tr('It rained all day. You stayed at home, did a crossword and sorted the letters on your desk. Sarah called in the evening.', 'Il a plu toute la journée. Vous êtes restée à la maison, vous avez fait des mots croisés et rangé les lettres sur votre bureau. Sarah a appelé le soir.') },
   ];
 
   // How the people know each other. The user's own link to each person is on the person.
   const connections = [
-    { a: 'sarah', b: 'leo', label: 'mother and son' },
-    { a: 'sarah', b: 'emma', label: 'mother and daughter' },
-    { a: 'leo', b: 'emma', label: 'brother and sister' },
-    { a: 'sarah', b: 'david', label: 'sister and brother' },
+    { a: 'sarah', b: 'leo', label: tr('mother and son', 'mère et fils') },
+    { a: 'sarah', b: 'emma', label: tr('mother and daughter', 'mère et fille') },
+    { a: 'leo', b: 'emma', label: tr('brother and sister', 'frère et sœur') },
+    { a: 'sarah', b: 'david', label: tr('sister and brother', 'sœur et frère') },
   ];
 
   // Order of the people around the connections graph: people who know each other sit side by side.
@@ -161,16 +161,16 @@ const SampleData = (() => {
   // list 'day': to do every day, at `time` ('HH:MM') or at any time ('').
   // list 'leaving': to have before leaving home.
   const tasks = [
-    { id: 'pills-morning', list: 'day', text: 'Take the morning pills', time: '08:00' },
-    { id: 'breakfast', list: 'day', text: 'Breakfast', time: '08:30' },
-    { id: 'lunch', list: 'day', text: 'Lunch', time: '12:30' },
-    { id: 'dinner', list: 'day', text: 'Dinner', time: '19:00' },
-    { id: 'pills-evening', list: 'day', text: 'Take the evening pills', time: '21:00' },
+    { id: 'pills-morning', list: 'day', text: tr('Take the morning pills', 'Prendre les médicaments du matin'), time: '08:00' },
+    { id: 'breakfast', list: 'day', text: tr('Breakfast', 'Petit-déjeuner'), time: '08:30' },
+    { id: 'lunch', list: 'day', text: tr('Lunch', 'Déjeuner'), time: '12:30' },
+    { id: 'dinner', list: 'day', text: tr('Dinner', 'Dîner'), time: '19:00' },
+    { id: 'pills-evening', list: 'day', text: tr('Take the evening pills', 'Prendre les médicaments du soir'), time: '21:00' },
     // `days`: only on these days of the week (0 is Sunday). Without it, every day.
-    { id: 'bins', list: 'day', text: 'Take out the bins', time: '18:00', days: [2] },
-    { id: 'keys', list: 'leaving', text: 'Keys', time: '' },
-    { id: 'phone', list: 'leaving', text: 'Phone', time: '' },
-    { id: 'card', list: 'leaving', text: 'Card', time: '' },
+    { id: 'bins', list: 'day', text: tr('Take out the bins', 'Sortir les poubelles'), time: '18:00', days: [2] },
+    { id: 'keys', list: 'leaving', text: tr('Keys', 'Clés'), time: '' },
+    { id: 'phone', list: 'leaving', text: tr('Phone', 'Téléphone'), time: '' },
+    { id: 'card', list: 'leaving', text: tr('Card', 'Carte'), time: '' },
   ];
   // What was done, and when: { taskId, at }. A thing of the day is done when it has one today.
   const ticks = [];
@@ -178,24 +178,24 @@ const SampleData = (() => {
   // `things` is what is needed; `steps` are done in order.
   const guides = [
     {
-      id: 'tea', name: 'A cup of tea', things: ['A cup', 'A tea bag', 'Water'],
+      id: 'tea', name: tr('A cup of tea', 'Une tasse de thé'), things: [tr('A cup', 'Une tasse'), tr('A tea bag', 'Un sachet de thé'), tr('Water', 'De l’eau')],
       steps: [
-        'Fill the kettle with water and switch it on.',
-        'Put the tea bag in the cup.',
-        'When the water has boiled, pour it in the cup.',
-        'Wait three minutes, then take the tea bag out.',
-        'Switch the kettle off.',
+        tr('Fill the kettle with water and switch it on.', 'Remplissez la bouilloire d’eau et allumez-la.'),
+        tr('Put the tea bag in the cup.', 'Mettez le sachet de thé dans la tasse.'),
+        tr('When the water has boiled, pour it in the cup.', 'Quand l’eau a bouilli, versez-la dans la tasse.'),
+        tr('Wait three minutes, then take the tea bag out.', 'Attendez trois minutes, puis retirez le sachet.'),
+        tr('Switch the kettle off.', 'Éteignez la bouilloire.'),
       ],
     },
     {
-      id: 'omelette', name: 'An omelette', things: ['Two eggs', 'Butter', 'Salt', 'A pan', 'A bowl and a fork'],
+      id: 'omelette', name: tr('An omelette', 'Une omelette'), things: [tr('Two eggs', 'Deux œufs'), tr('Butter', 'Du beurre'), tr('Salt', 'Du sel'), tr('A pan', 'Une poêle'), tr('A bowl and a fork', 'Un bol et une fourchette')],
       steps: [
-        'Break the two eggs in the bowl.',
-        'Add a pinch of salt and beat with the fork.',
-        'Melt a little butter in the pan, on a medium heat.',
-        'Pour the eggs in the pan.',
-        'When the eggs are set, fold the omelette and put it on a plate.',
-        'Switch the heat off.',
+        tr('Break the two eggs in the bowl.', 'Cassez les deux œufs dans le bol.'),
+        tr('Add a pinch of salt and beat with the fork.', 'Ajoutez une pincée de sel et battez avec la fourchette.'),
+        tr('Melt a little butter in the pan, on a medium heat.', 'Faites fondre un peu de beurre dans la poêle, à feu moyen.'),
+        tr('Pour the eggs in the pan.', 'Versez les œufs dans la poêle.'),
+        tr('When the eggs are set, fold the omelette and put it on a plate.', 'Quand les œufs sont cuits, pliez l’omelette et mettez-la dans une assiette.'),
+        tr('Switch the heat off.', 'Éteignez le feu.'),
       ],
     },
   ];

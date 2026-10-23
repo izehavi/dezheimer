@@ -68,7 +68,7 @@ def add_piece(session: str, index: int, sample_rate: int, body: bytes) -> None:
     _piece(session, index).write_bytes(samples.tobytes())
 
 
-def finish(session: str, pieces: int, title: str, text: str) -> float:
+def finish(session: str, pieces: int, title: str, text: str, lang: str = "en") -> float:
     """Put the pieces together as one recording, kept with the text. Returns its length in seconds."""
     if not SESSION.fullmatch(session) or not 0 < pieces <= MAX_PIECES:
         raise ValueError("Not a reading.")
@@ -82,7 +82,7 @@ def finish(session: str, pieces: int, title: str, text: str) -> float:
         file.setsampwidth(2)
         file.setframerate(SAMPLE_RATE)
         file.writeframes(sound)
-    _write(name, {"title": title, "text": text, "cut": False})
+    _write(name, {"title": title, "text": text, "cut": False, "lang": lang})
     for path in paths:
         path.unlink()
     return len(sound) / 2 / SAMPLE_RATE
@@ -245,7 +245,8 @@ def cut(reading: dict, transcriber, model: str) -> dict:
     kept = 0
     for (a, b), written, found in zip(spans, heard, align(reading["text"], heard)):
         if found["keep"]:
-            recordings.keep(audio[a:b], SAMPLE_RATE, written, vocabulary, model, said=found["said"])
+            recordings.keep(audio[a:b], SAMPLE_RATE, written, vocabulary, model, said=found["said"],
+                            lang=reading.get("lang", "en"))
             kept += 1
     note = json.loads(reading["path"].with_suffix(".json").read_text(encoding="utf-8"))
     _write(reading["name"], {**note, "cut": True, "pieces": len(spans), "kept": kept})

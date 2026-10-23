@@ -15,11 +15,16 @@ Two simple rules help the model where meaning alone is ambiguous:
 - a few opening words are strong hints ("Remember that...", "Search for...").
 
 To make an intent more robust, add example sentences to EXAMPLES.
+
+French requests are found the same way, with a sentence model made for many languages
+and the French examples and hints of intents_fr.py.
 """
 
 import os
 import re
 import threading
+
+from . import intents_fr
 
 MODEL_NAME = os.environ.get("DEZHEIMER_INTENT_MODEL", "sentence-transformers/all-MiniLM-L6-v2")
 MIN_SCORE = 0.42   # below this similarity, the sentence is not understood
@@ -301,7 +306,9 @@ _WISH = re.compile(
 _POLITE = re.compile(r"^\W*(?:please\s+)?(?:can|could|will|would) you\s+(?:please\s+)?", re.I)
 
 
-def is_question(text):
+def is_question(text, lang="en"):
+    if lang == "fr":
+        return intents_fr.is_question(text)
     polite = _POLITE.match(text)
     if polite:
         # "Can you tell me who Rose is?" is a question; "Can you add a lunch on Friday?" is an order.
@@ -311,26 +318,36 @@ def is_question(text):
     return text.rstrip().endswith("?") or bool(_ASKING.match(text))
 
 
-def neutral(text, known_names=()):
+def neutral(text, known_names=(), lang="en"):
     """Replace people's names by "Alex", so that only the meaning of the request is compared."""
+    french = lang == "fr"
+    not_names, after, openers = (
+        (intents_fr.NOT_NAMES, intents_fr.AFTER_A_NAME, intents_fr.OPENERS) if french
+        else (_NOT_NAMES, _AFTER_A_NAME, _OPENERS))
     for name in sorted(known_names, key=len, reverse=True):
         text = re.sub(rf"\b{re.escape(name)}\b", "Alex", text, flags=re.I)
 
     def swap(match):
         word, start = match.group(0), match.start()
-        if word.lower() in _NOT_NAMES:
+        if word.lower() in not_names:
             return word
         opening = start == 0 or text[:start].rstrip()[-1:] in ".!?:"
         if not opening:
             return "Alex"
-        follows = re.match(rf"\s*{_AFTER_A_NAME}", text[match.end():])
-        return "Alex" if follows and word.lower() not in _OPENERS else word
+        follows = re.match(rf"\s*{after}", text[match.end():])
+        return "Alex" if follows and word.lower() not in openers else word
 
+    if french:
+        return re.sub(r"\b[A-ZÀ-Ý][a-zà-ÿ]+(?:-[A-ZÀ-Ý][a-zà-ÿ]+)?\b", swap, text)
     return re.sub(r"\b[A-Z][a-z]+(?:'[a-z]+)?\b(?<!'s)", swap, text)
 
 
 class IntentClassifier:
-    def __init__(self):
+    def __init__(self, lang="en"):
+        self.lang = lang
+        self.model_name = intents_fr.MODEL_NAME if lang == "fr" else MODEL_NAME
+        self.examples = intents_fr.EXAMPLES if lang == "fr" else EXAMPLES
+        self.hints = intents_fr.HINTS if lang == "fr" else _HINTS
         self.ready = False
         self._lock = threading.Lock()
 
@@ -344,10 +361,10 @@ class IntentClassifier:
             from transformers import AutoModel, AutoTokenizer
 
             # On the processor: the model is tiny, and this keeps the graphics card free.
-            self._tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
-            self._model = AutoModel.from_pretrained(MODEL_NAME).eval()
-            self._labels = [intent for intent, examples in EXAMPLES.items() for _ in examples]
-            self._examples = self._embed([neutral(e) for examples in EXAMPLES.values() for e in examples])
+            self._tokenizer = AutoTokenizer.from_pretrained(self.model_name)
+            self._model = AutoModel.from_pretrained(self.model_name).eval()
+            self._labels = [intent for intent, examples in self.examples.items() for _ in examples]
+            self._examples = self._embed([neutral(e, lang=self.lang) for examples in self.examples.values() for e in examples])
             self.ready = True
 
     def _embed(self, sentences):
@@ -365,18 +382,18 @@ class IntentClassifier:
         """Return (intent, score). The intent is None when nothing is close enough."""
         if not self.ready:
             self._load()
-        scores = (self._embed([neutral(text, known_names)]) @ self._examples.T)[0]
+        scores = (self._embed([neutral(text, known_names, self.lang)]) @ self._examples.T)[0]
         best = {}
         for label, score in zip(self._labels, scores.tolist()):
             best[label] = max(best.get(label, -1.0), score)
 
         hinted = set()
-        for label, bonus, pattern in _HINTS:
+        for label, bonus, pattern in self.hints:
             if pattern.search(text) and label not in hinted:
                 best[label] += bonus
                 hinted.add(label)
 
-        allowed = QUESTIONS if is_question(text) else STATEMENTS
+        allowed = QUESTIONS if is_question(text, self.lang) else STATEMENTS
         intent = max((label for label in best if label in allowed or label is None), key=best.get)
         score = round(best[intent], 3)
         # A hint is evidence by itself, so a hinted intent does not need a high score.
@@ -385,3 +402,8 @@ class IntentClassifier:
 
 
 classifier = IntentClassifier()
+classifier_fr = IntentClassifier("fr")   # loaded the first time a French request comes
+
+
+def classifier_for(lang):
+    return classifier_fr if lang == "fr" else classifier
